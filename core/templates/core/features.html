@@ -1,0 +1,136 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Features | RapidResQ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <style>
+        body { background-color: #0b0e14 !important; font-family: 'Plus Jakarta Sans', sans-serif; }
+        .glass-panel { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        #mobile-menu { transition: transform 0.3s ease-in-out; transform: translateX(100%); }
+        #mobile-menu.active { transform: translateX(0); }
+        .nav-link-mobile { font-size: 1.5rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: white; padding: 1rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); width: 100%; text-align: center; }
+    </style>
+</head>
+<body class="antialiased text-white min-h-screen flex flex-col relative overflow-x-hidden">
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 border-b border-white/5 bg-black/40 backdrop-blur-xl">
+        <div class="max-w-7xl mx-auto px-6 lg:px-8 py-5 flex items-center justify-between">
+            <div class="flex-none">
+                <a href="{% url 'home' %}" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                    <svg class="w-8 h-8 text-[#02DEE5]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                    <span class="logo-gradient">RapidResQ</span>
+                </a>
+            </div>
+            
+            <div class="hidden md:flex flex-grow justify-center items-center gap-8 lg:gap-12">
+                <a href="{% url 'home' %}#platform" class="nav-link text-[11px]">Platform</a>
+                <a href="{% url 'home' %}#network" class="nav-link text-[11px]">Network</a>
+                <a href="{% url 'responder_login' %}" class="nav-link text-[11px]">Portals</a>
+                <a href="{% url 'features' %}" class="nav-link text-[11px] text-[#02DEE5]">Features</a>
+                <a href="{% url 'about' %}" class="nav-link text-[11px]">About</a>
+                <a href="{% url 'contact' %}" class="nav-link text-[11px]">Contact</a>
+            </div>
+
+            <div class="hidden md:flex items-center">
+                <a href="{% url 'home' %}" class="text-[10px] font-bold text-gray-500 hover:text-white uppercase tracking-widest transition-colors flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    Home
+                </a>
+            </div>
+
+            <button id="menu-open" class="md:hidden text-[#02DEE5] p-2">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobile-menu" class="fixed inset-0 z-[100] bg-[#0b0e14] flex flex-col p-8 md:hidden">
+        <div class="flex justify-between items-center mb-16">
+            <span class="logo-gradient text-xl">RapidResQ</span>
+            <button id="menu-close" class="text-gray-400 hover:text-white"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+        </div>
+        <div class="flex flex-col items-center gap-4">
+            <a href="{% url 'home' %}#platform" class="nav-link-mobile" onclick="toggleMenu()">Platform</a>
+            <a href="{% url 'home' %}#network" class="nav-link-mobile" onclick="toggleMenu()">Network</a>
+            <a href="{% url 'responder_login' %}" class="nav-link-mobile">Portals</a>
+            <a href="{% url 'features' %}" class="nav-link-mobile text-[#02DEE5]">Features</a>
+            <a href="{% url 'about' %}" class="nav-link-mobile">About</a>
+            <a href="{% url 'contact' %}" class="nav-link-mobile">Contact</a>
+            <a href="{% url 'home' %}" class="mt-8 px-10 py-4 rounded-full border border-white/10 font-bold uppercase tracking-widest w-full text-center">Back to Home</a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="flex-grow flex flex-col items-center pt-48 px-6 pb-24 text-center">
+        <div class="max-w-5xl w-full">
+            <h1 class="text-5xl lg:text-7xl font-black tracking-tighter mb-4 text-gradient uppercase">Platform Features</h1>
+            <p class="text-gray-500 font-bold uppercase tracking-widest text-[10px] mb-20">Advanced Emergency Infrastructure</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-24">
+                <div class="glass-panel p-10 rounded-3xl text-left border-[#02DEE5]/10">
+                    <div class="text-3xl mb-6">🎙️</div>
+                    <h3 class="text-white font-bold text-lg uppercase tracking-tight mb-4">AI Voice Triage</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">Gemini-powered multilingual emergency analysis. Speaks English, Hindi, and Hinglish. Neural extraction of intent and severity in milliseconds.</p>
+                </div>
+                <div class="glass-panel p-10 rounded-3xl text-left border-[#02DEE5]/10">
+                    <div class="text-3xl mb-6">⚡</div>
+                    <h3 class="text-white font-bold text-lg uppercase tracking-tight mb-4">Offline ResQ Mode</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">Zero-network survival tech. Local exit maps and physical beacons trigger automatically when internet fails, ensuring safety in blackouts.</p>
+                </div>
+                <div class="glass-panel p-10 rounded-3xl text-left border-[#02DEE5]/10">
+                    <div class="text-3xl mb-6">📊</div>
+                    <h3 class="text-white font-bold text-lg uppercase tracking-tight mb-4">Command Dashboard</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">Centralized live tracking for facility management and first responders. Real-time matrix of all active incidents and responder locations.</p>
+                </div>
+                <div class="glass-panel p-10 rounded-3xl text-left border-[#02DEE5]/10">
+                    <div class="text-3xl mb-6">📍</div>
+                    <h3 class="text-white font-bold text-lg uppercase tracking-tight mb-4">Smart Proximity Routing</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">Instantly alerts the nearest staff members to reach the guest in seconds using high-precision Haversine coordinates.</p>
+                </div>
+            </div>
+
+            <!-- How to Use -->
+            <div class="w-full max-w-2xl mx-auto glass-panel p-12 rounded-[3rem] border-[#02DEE5]/20">
+                <h2 class="text-white font-black uppercase tracking-[0.3em] text-sm mb-10">How to Use RapidResQ</h2>
+                <div class="flex flex-col md:flex-row justify-center items-center gap-12">
+                    <div class="flex flex-col items-center">
+                        <div class="w-12 h-12 rounded-full border border-[#02DEE5] flex items-center justify-center text-[#02DEE5] font-black mb-4">1</div>
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Press SOS</span>
+                    </div>
+                    <div class="hidden md:block w-8 h-[1px] bg-white/10"></div>
+                    <div class="flex flex-col items-center">
+                        <div class="w-12 h-12 rounded-full border border-[#02DEE5] flex items-center justify-center text-[#02DEE5] font-black mb-4">2</div>
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Speak Status</span>
+                    </div>
+                    <div class="hidden md:block w-8 h-[1px] bg-white/10"></div>
+                    <div class="flex flex-col items-center">
+                        <div class="w-12 h-12 rounded-full border border-[#02DEE5] flex items-center justify-center text-[#02DEE5] font-black mb-4">3</div>
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Follow Map</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-[#0b0e14] border-t border-white/5 py-10 text-center">
+        <p class="text-[10px] text-gray-600 font-bold uppercase tracking-widest">© 2026 RapidResQ Intelligence Group. All Rights Reserved.</p>
+    </footer>
+
+    <script>
+        const menuOpen = document.getElementById('menu-open');
+        const menuClose = document.getElementById('menu-close');
+        const mobileMenu = document.getElementById('mobile-menu');
+        function toggleMenu() { mobileMenu.classList.toggle('active'); document.body.style.overflow = mobileMenu.classList.contains('active') ? 'hidden' : 'auto'; }
+        menuOpen.onclick = toggleMenu; menuClose.onclick = toggleMenu;
+    </script>
+</body>
+</html>

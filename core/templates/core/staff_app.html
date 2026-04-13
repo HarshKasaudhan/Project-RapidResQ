@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Staff Portal | RapidResQ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-black: #080808;
+            --primary-cyan: #02DEE5;
+            --secondary-blue: #1F76F3;
+        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--bg-black); color: #fff; }
+        .toggle-checkbox:checked { right: 0; border-color: var(--primary-cyan); }
+        .toggle-checkbox:checked + .toggle-label { background: linear-gradient(135deg, var(--primary-cyan) 0%, var(--secondary-blue) 100%); }
+        .glass-panel { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <header class="w-full p-6 border-b border-white/5 flex justify-between items-center sticky top-0 z-10 bg-black/50 backdrop-blur-md">
+        <a href="{% url 'home' %}" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <svg class="w-6 h-6 text-[#02DEE5]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+            <div>
+                <h1 class="text-[10px] font-bold tracking-[0.2em] text-gray-400 uppercase">Field Unit</h1>
+                <p class="text-sm font-bold text-white">{{ staff.name }} @ {{ venue.hotel_name }}</p>
+            </div>
+        </a>
+        <div class="flex items-center gap-3">
+            <span class="text-[9px] font-bold text-gray-500 uppercase tracking-widest" id="status-text">Active</span>
+            <div class="relative inline-block w-10 mr-2 align-middle select-none">
+                <input type="checkbox" name="toggle" id="availability-toggle" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-2 border-gray-600 appearance-none cursor-pointer z-10 transition-all duration-200" {% if staff.is_available %}checked{% endif %}/>
+                <label for="availability-toggle" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-800 cursor-pointer transition-colors"></label>
+            </div>
+            <a href="{% url 'home' %}" class="text-[9px] font-bold text-gray-500 hover:text-white transition-colors border-l border-white/10 pl-4 ml-2 uppercase tracking-widest">Exit</a>
+        </div>
+    </header>
+
+    <main class="flex-grow flex flex-col items-center justify-center p-6">
+        <div class="glass-panel p-10 rounded-2xl w-full max-w-sm text-center">
+            <div class="w-20 h-20 bg-[#02DEE5]/10 rounded-full flex items-center justify-center mx-auto mb-6"><div class="w-3 h-3 bg-[#02DEE5] rounded-full animate-ping"></div></div>
+            <h2 class="text-2xl font-bold tracking-tighter mb-2">Standby</h2>
+            <p class="text-gray-500 text-sm mb-8 text-center">Awaiting priority dispatch.</p>
+            <div class="bg-black/40 border border-white/5 p-4 rounded-xl text-left font-mono">
+                <div class="text-[9px] uppercase font-bold text-gray-600 mb-2 tracking-widest">Telemetry</div>
+                <div class="text-[10px] text-[#02DEE5] whitespace-pre-wrap" id="gps-status">Syncing...</div>
+            </div>
+        </div>
+    </main>
+
+    <div id="dispatch-ui" class="hidden flex-col items-center justify-center w-full z-50 fixed inset-0 bg-black/90 backdrop-blur-xl p-6">
+        <div class="w-full max-w-sm glass-panel rounded-2xl overflow-hidden border-[#02DEE5]/20 text-center">
+            <div class="bg-[#02DEE5] p-8 text-black"><h1 class="text-xs font-black uppercase tracking-[0.3em] mb-2">Priority Dispatch</h1><p class="text-2xl font-bold tracking-tighter" id="dispatch-category">Emergency</p></div>
+            <div class="p-8">
+                <p class="text-gray-500 text-[10px] uppercase font-bold tracking-widest mb-2">Target Location</p>
+                <p class="font-mono text-xs text-white bg-white/5 py-3 rounded-lg border border-white/5 mb-8" id="dispatch-location">---</p>
+                <div class="flex gap-4"><button id="decline-btn" class="flex-1 py-4 text-xs font-bold text-gray-500 uppercase">Ignore</button><button id="accept-btn" class="flex-1 bg-[#02DEE5] text-black font-black py-4 rounded-xl text-xs uppercase tracking-widest">Acknowledge</button></div>
+            </div>
+        </div>
+    </div>
+
+    {{ venue.id|json_script:"venue-id" }}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const venueId = JSON.parse(document.getElementById('venue-id').textContent);
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            const toggle = document.getElementById('availability-toggle');
+            const statusText = document.getElementById('status-text');
+            const gpsStatus = document.getElementById('gps-status');
+            
+            toggle.addEventListener('change', () => {
+                statusText.textContent = toggle.checked ? "Active" : "Offline";
+                fetch('', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }, body: JSON.stringify({ is_available: toggle.checked }) });
+            });
+
+            if ("geolocation" in navigator) {
+                navigator.geolocation.watchPosition(pos => {
+                    const lat = pos.coords.latitude; const lng = pos.coords.longitude;
+                    gpsStatus.textContent = `Lat: ${lat.toFixed(5)}\nLng: ${lng.toFixed(5)}\nAcc: ±${Math.round(pos.coords.accuracy)}m`;
+                    if (pos.coords.accuracy < 30) {
+                        fetch('', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }, body: JSON.stringify({ lat: lat, lng: lng }) });
+                    }
+                }, null, { enableHighAccuracy: true });
+            }
+
+            const socketUrl = `${window.location.protocol === 'https:' ? 'wss://' : 'ws://'}${window.location.host}/ws/alerts/?venue_id=${venueId}`;
+            const socket = new WebSocket(socketUrl);
+            socket.onmessage = e => {
+                const data = JSON.parse(e.data);
+                if (data.alert) {
+                    document.getElementById('dispatch-location').textContent = data.alert.location;
+                    document.getElementById('dispatch-category').textContent = data.alert.type;
+                    document.getElementById('dispatch-ui').classList.replace('hidden', 'flex');
+                }
+            };
+            document.getElementById('decline-btn').onclick = () => document.getElementById('dispatch-ui').classList.replace('flex', 'hidden');
+        });
+    </script>
+</body>
+</html>

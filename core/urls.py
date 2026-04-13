@@ -1,0 +1,20 @@
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from core.views import (
+    CustomUserViewSet, VenueViewSet, EmergencyIncidentViewSet, 
+    HelpDeskMessageViewSet, offline_safety_guide, command_dashboard, 
+    guest_app, venue_login, staff_signup, staff_login, staff_portal
+)
+
+router = DefaultRouter()
+router.register(r'users', CustomUserViewSet, basename='user')
+router.register(r'venues', VenueViewSet, basename='venue')
+router.register(r'incidents', EmergencyIncidentViewSet, basename='incident')
+router.register(r'chat', HelpDeskMessageViewSet, basename='chat')
+
+urlpatterns = [
+    path('', include(router.urls)),
+    path('guide/', offline_safety_guide, name='offline_safety_guide'),
+    path('dashboard/', command_dashboard, name='dashboard'),
+    path('app/', guest_app, name='guest_app'),
+]

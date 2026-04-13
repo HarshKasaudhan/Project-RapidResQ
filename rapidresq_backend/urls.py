@@ -1,0 +1,38 @@
+"""
+URL configuration for rapidresq_backend project.
+
+The `urlpatterns` list routes URLs to views. For more information please see:
+    https://docs.djangoproject.com/en/4.2/topics/http/urls/
+Examples:
+Function views
+    1. Add an import:  from my_app import views
+    2. Add a URL to urlpatterns:  path('', views.home, name='home')
+Class-based views
+    1. Add an import:  from other_app.views import Home
+    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
+Including another URLconf
+    1. Import the include() function: from django.urls import include, path
+    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
+"""
+from django.contrib import admin
+from django.urls import path, include
+from core import views
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('api/', include('core.urls')),
+    
+    # Master Hub & Portals
+    path('', views.home_hub, name='home'),
+    path('about/', views.about_view, name='about'),
+    path('contact/', views.contact_view, name='contact'),
+    path('features/', views.features_view, name='features'),
+    path('portal/<str:role>/', views.response_portal, name='response_portal'),
+    path('staff-login/', views.staff_login, name='staff_login'),
+    path('venue-login/', views.venue_login, name='venue_login'),
+    path('staff-signup/', views.staff_signup, name='staff_signup'),
+    path('register-venue/', views.register_venue, name='register_venue'),
+    path('responder-login/', views.responder_login, name='responder_login'),
+    path('register-responder/', views.register_responder, name='register_responder'),
+    path('staff/', views.staff_portal, name='staff_portal'),
+]

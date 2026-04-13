@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Command Center | RapidResQ Enterprise</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-black: #080808;
+            --primary-cyan: #02DEE5;
+            --secondary-blue: #1F76F3;
+        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--bg-black); color: #e5e5e5; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .panel { background: #0f0f0f; border: 1px solid rgba(2, 222, 229, 0.1); border-radius: 12px; }
+        .btn-primary { background: linear-gradient(135deg, var(--primary-cyan) 0%, var(--secondary-blue) 100%); color: black; font-weight: 700; }
+        .map-layer { filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(85%); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased">
+
+    <!-- Header -->
+    <header class="bg-[#0f0f0f] border-b border-white/5 sticky top-0 z-50">
+        <div class="px-6 py-4 flex items-center justify-between">
+            <a href="{% url 'home' %}" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                <svg class="w-6 h-6 text-[#02DEE5]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                <h1 class="text-[10px] font-bold tracking-[0.2em] text-white uppercase">
+                    {{ venue.hotel_name }} <span class="text-[#02DEE5]/50 font-normal">/ Command</span>
+                </h1>
+            </a>
+            <div class="flex items-center gap-6 text-[10px] font-mono">
+                <span class="text-gray-500 uppercase tracking-widest">Status: <span class="text-[#02DEE5]" id="status-indicator">Secure</span></span>
+                <span class="text-gray-500" id="clock">00:00:00 UTC</span>
+                <a href="{% url 'home' %}" class="text-gray-500 hover:text-white transition-colors border-l border-white/10 pl-6 ml-2">EXIT</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow p-6 grid grid-cols-1 xl:grid-cols-3 gap-6 h-[calc(100vh-65px)]">
+        <section class="xl:col-span-2 flex flex-col gap-6">
+            <div class="panel p-1 h-[60%] relative overflow-hidden">
+                <div id="map" class="w-full h-full rounded-lg bg-[#111]"></div>
+            </div>
+            <div class="panel p-5 flex-grow flex flex-col overflow-hidden">
+                <div class="flex items-center justify-between mb-4 border-b border-white/5 pb-4">
+                    <h2 class="text-[10px] font-bold text-[#02DEE5] uppercase tracking-[0.2em]">Active Incidents</h2>
+                    <span class="bg-[#02DEE5]/10 text-[#02DEE5] text-[10px] px-2 py-1 rounded font-mono border border-[#02DEE5]/20" id="emergency-count">0 DETECTED</span>
+                </div>
+                <div id="emergencies-container" class="flex-grow overflow-y-auto space-y-3 pr-2 scrollbar-hide"></div>
+            </div>
+        </section>
+
+        <section class="flex flex-col gap-6 h-full">
+            <div class="panel p-6">
+                <h2 class="text-[10px] font-bold text-[#02DEE5] uppercase tracking-[0.2em] mb-6">Dispatch Intelligence</h2>
+                <button id="ai-voice-btn" class="w-full btn-primary py-3 rounded-lg text-[11px] mb-6 uppercase tracking-widest flex items-center justify-center gap-3">🎙️ Voice Command</button>
+                <div class="bg-black/50 border border-white/5 rounded-lg p-4 h-24 overflow-y-auto font-mono text-[10px] text-gray-500 mb-6" id="ai-transcript">System Ready.</div>
+                <h3 class="text-[10px] font-bold text-[#1F76F3] uppercase tracking-widest mb-4">Nearest Responders</h3>
+                <div id="nearest-staff-container" class="space-y-2"></div>
+            </div>
+            <div class="panel flex-grow flex flex-col overflow-hidden">
+                <div class="p-4 border-b border-white/5"><h2 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Audit Log</h2></div>
+                <div id="audit-log" class="p-4 overflow-y-auto h-full space-y-3 bg-black/20 font-mono text-[10px]"></div>
+            </div>
+        </section>
+    </main>
+
+    {{ staff_json|json_script:"staff-data" }}
+    {{ venue.id|json_script:"venue-id" }}
+
+    <script>
+        let map;
+        let staffMarkers = {}; // Dynamic storage for staff icons
+        const venueId = JSON.parse(document.getElementById('venue-id').textContent);
+        const staffList = JSON.parse(document.getElementById('staff-data').textContent);
+        
+        const createStaffIcon = (name) => L.divIcon({
+            className: 'custom-div-icon',
+            html: `<div class='flex flex-col items-center'><div class='w-3 h-3 rounded-full bg-[#02DEE5] border-2 border-white shadow-lg'></div><span class='text-[8px] font-bold text-white bg-black/50 px-1 rounded mt-1 whitespace-nowrap'>${name}</span></div>`,
+            iconSize: [12, 12], iconAnchor: [6, 6]
+        });
+
+        function haversine(lat1, lon1, lat2, lon2) {
+            const R = 6371e3;
+            const p1 = lat1 * Math.PI/180;
+            const p2 = lat2 * Math.PI/180;
+            const dp = (lat2-lat1) * Math.PI/180;
+            const dl = (lon2-lon1) * Math.PI/180;
+            const a = Math.sin(dp/2) * Math.sin(dp/2) + Math.cos(p1) * Math.cos(p2) * Math.sin(dl/2) * Math.sin(dl/2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            map = L.map('map', {zoomControl: false, attributionControl: false}).setView([30.7699, 76.5756], 15);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { className: 'map-layer', maxZoom: 20 }).addTo(map);
+            
+            const socketUrl = `${(window.location.protocol === 'https:') ? 'wss://' : 'ws://'}${window.location.host}/ws/alerts/?venue_id=${venueId}&role=ADMIN`;
+            const socket = new WebSocket(socketUrl);
+            
+            socket.onmessage = e => {
+                const data = JSON.parse(e.data);
+                
+                // Handle Live Staff Movement
+                if (data.staff_update) {
+                    const s = data.staff_update;
+                    if (staffMarkers[s.id]) {
+                        staffMarkers[s.id].setLatLng([s.lat, s.lng]);
+                    } else {
+                        staffMarkers[s.id] = L.marker([s.lat, s.lng], {icon: createStaffIcon(s.name)}).addTo(map);
+                    }
+                    return;
+                }
+
+                // Handle SOS Alerts
+                const alert = data.alert;
+                if (alert) {
+                    let lat = 30.7699, lng = 76.5756;
+                    const locData = alert.location || "";
+                    const latMatch = locData.match(/Lat:\s*([0-9.-]+)/i);
+                    const lngMatch = locData.match(/Lng:\s*([0-9.-]+)/i);
+                    if (latMatch && lngMatch) { lat = parseFloat(latMatch[1]); lng = parseFloat(lngMatch[1]); }
+
+                    L.marker([lat, lng], {icon: L.divIcon({className: 'bg-red-600 w-4 h-4 rounded-full border-2 border-white animate-ping'})}).addTo(map);
+                    map.flyTo([lat, lng], 16);
+
+                    // Update UI Lists (Emergency and Proximity)
+                    // ... (rest of logic) ...
+                }
+            };
+        });
+    </script>
+</body>
+</html>

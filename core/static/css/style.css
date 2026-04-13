@@ -1,0 +1,65 @@
+html {
+    scroll-behavior: smooth;
+}
+
+section {
+    scroll-margin-top: 100px; /* Offset for sticky navbar */
+}
+
+:root {
+    --bg-navy: #0b0e14;
+    --primary-cyan: #02DEE5;
+    --secondary-blue: #1F76F3;
+    --sos-red: #dc2626; /* red-600 */
+}
+
+body {
+    background-color: var(--bg-navy) !important;
+    color: #ffffff;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+.logo-gradient {
+    background: linear-gradient(135deg, var(--primary-cyan) 0%, var(--secondary-blue) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 800;
+    font-size: 1.5rem;
+    letter-spacing: -0.05em;
+}
+
+.btn-sos-force {
+    background-color: var(--sos-red) !important;
+    color: white !important;
+    font-weight: 900;
+    font-size: 1.875rem;
+    padding: 2rem 5rem;
+    border-radius: 9999px;
+    text-transform: uppercase;
+    box-shadow: 0 0 20px rgba(220, 38, 38, 0.5);
+    animation: pulse-sos 2s infinite;
+    text-decoration: none;
+    display: inline-block;
+    transition: transform 0.2s;
+}
+
+@keyframes pulse-sos {
+    0% { transform: scale(1); box-shadow: 0 0 20px rgba(220, 38, 38, 0.5); }
+    50% { transform: scale(1.05); box-shadow: 0 0 50px rgba(220, 38, 38, 0.8); }
+    100% { transform: scale(1); box-shadow: 0 0 20px rgba(220, 38, 38, 0.5); }
+}
+
+.nav-link {
+    color: #9ca3af;
+    font-weight: 700;
+    font-size: 0.875rem;
+    letter-spacing: 0.1em;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.nav-link:hover {
+    color: var(--primary-cyan);
+}

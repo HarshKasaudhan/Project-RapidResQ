@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ login_type|default:"Staff" }} Login | RapidResQ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .logo-gradient {
+            background: linear-gradient(135deg, #02DEE5 0%, #1F76F3 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body class="bg-[#080808] text-gray-200 min-h-screen flex flex-col items-center justify-center p-4 font-['Plus Jakarta Sans'] relative">
+    
+    <!-- Top Navigation for Login -->
+    <div class="absolute top-8 left-0 w-full px-8 flex justify-between items-center">
+        <a href="{% url 'home' %}" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <svg class="w-8 h-8 text-[#02DEE5]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+            <span class="logo-gradient text-xl tracking-tighter">RapidResQ</span>
+        </a>
+        <a href="{% url 'home' %}" class="text-[10px] font-bold text-gray-500 hover:text-[#02DEE5] uppercase tracking-widest transition-colors flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Exit to Home
+        </a>
+    </div>
+
+    <div class="w-full max-w-md mt-12">
+        <div class="bg-[#0f0f0f] p-10 rounded-2xl border border-white/5 shadow-2xl">
+            <div class="mb-8 text-center md:text-left">
+                <h2 class="text-lg font-bold text-white mb-1 uppercase tracking-tight">{{ login_type|default:"Staff" }} Access</h2>
+                <p class="text-xs text-gray-500 font-medium uppercase tracking-widest">Secure Dispatch Protocol</p>
+            </div>
+            
+            {% if messages or error %}
+            <div class="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl mb-8 text-[11px] font-bold uppercase tracking-widest">
+                {{ error }}{% for m in messages %}{{ m }}{% endfor %}
+            </div>
+            {% endif %}
+            
+            <form method="POST" class="space-y-6">
+                {% csrf_token %}
+                {% if login_type == "Venue Admin" %}
+                    <div>
+                        <label class="block text-gray-500 text-[10px] font-bold mb-2 uppercase tracking-widest">Venue Identifier</label>
+                        <input type="text" name="unique_venue_id" required class="w-full bg-black/50 text-white border border-white/5 rounded-xl py-3 px-4 focus:outline-none focus:border-[#02DEE5] transition-all text-sm" placeholder="ID-000">
+                    </div>
+                    <div>
+                        <label class="block text-gray-500 text-[10px] font-bold mb-2 uppercase tracking-widest">Master Key</label>
+                        <input type="password" name="password" required class="w-full bg-black/50 text-white border border-white/5 rounded-xl py-3 px-4 focus:outline-none focus:border-[#02DEE5] transition-all text-sm" placeholder="••••••••">
+                    </div>
+                {% elif login_type == "Official Responder" %}
+                    <div>
+                        <label class="block text-gray-500 text-[10px] font-bold mb-2 uppercase tracking-widest">Official Shield ID</label>
+                        <input type="text" name="official_id" required class="w-full bg-black/50 text-white border border-white/5 rounded-xl py-3 px-4 focus:outline-none focus:border-[#02DEE5] transition-all text-sm" placeholder="POL-999">
+                    </div>
+                    <div>
+                        <label class="block text-gray-500 text-[10px] font-bold mb-2 uppercase tracking-widest">Secret Passcode</label>
+                        <input type="password" name="password" required class="w-full bg-black/50 text-white border border-white/5 rounded-xl py-3 px-4 focus:outline-none focus:border-[#02DEE5] transition-all text-sm" placeholder="••••••••">
+                    </div>
+                {% else %}
+                    <div>
+                        <label class="block text-gray-500 text-[10px] font-bold mb-2 uppercase tracking-widest">Venue Code</label>
+                        <input type="text" name="venue_id" required class="w-full bg-black/50 text-white border border-white/5 rounded-xl py-3 px-4 focus:outline-none focus:border-[#02DEE5] transition-all text-sm" placeholder="Hotel ID">
+                    </div>
+                    <div>
+                        <label class="block text-gray-500 text-[10px] font-bold mb-2 uppercase tracking-widest">Unit ID</label>
+                        <input type="text" name="staff_id" required class="w-full bg-black/50 text-white border border-white/5 rounded-xl py-3 px-4 focus:outline-none focus:border-[#02DEE5] transition-all text-sm" placeholder="Staff ID">
+                    </div>
+                    <div>
+                        <label class="block text-gray-500 text-[10px] font-bold mb-2 uppercase tracking-widest">Access Pin</label>
+                        <input type="password" name="staff_passcode" required class="w-full bg-black/50 text-white border border-white/5 rounded-xl py-3 px-4 focus:outline-none focus:border-[#02DEE5] transition-all text-sm" placeholder="••••">
+                    </div>
+                {% endif %}
+                
+                <button type="submit" class="w-full bg-gradient-to-r from-[#02DEE5] to-[#1F76F3] text-black font-black py-4 rounded-xl transition-all text-xs uppercase tracking-[0.2em] shadow-lg shadow-[#02DEE5]/10">
+                    Authenticate
+                </button>
+            </form>
+            {% if login_type != "Venue Admin" %}
+            <div class="mt-8 text-center">
+                <a href="{% url 'staff_signup' %}" class="text-[10px] text-gray-500 font-bold uppercase tracking-widest hover:text-[#02DEE5] transition-colors">Register Unit</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
