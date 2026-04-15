@@ -30,7 +30,7 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-local-dev-only-repl
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DJANGO_DEBUG', 'False').lower() in ('true', '1', 't')
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = ['rapidresq-6tww.onrender.com', 'localhost', '127.0.0.1', '.onrender.com']
 
 # Production Security Headers (all controlled via environment variables)
 SECURE_BROWSER_XSS_FILTER = True
