@@ -40,4 +40,5 @@ urlpatterns = [
     path('responder-login/', views.responder_login, name='responder_login'),
     path('register-responder/', views.register_responder, name='register_responder'),
     path('staff/', views.staff_portal, name='staff_portal'),
+    path('health/', views.db_health_check, name='db_health_check'),
 ]

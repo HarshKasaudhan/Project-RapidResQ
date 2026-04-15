@@ -1,10 +1,10 @@
 import uuid
 import json
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.contrib import messages
 from django.contrib.auth import login, authenticate
-from django.db import transaction
+from django.db import transaction, connection
 from rest_framework import viewsets
 
 from core.models import CustomUser, Venue, EmergencyIncident, HelpDeskMessage, EmergencyAlert, StaffMember, OfficialResponder
@@ -339,3 +339,11 @@ def staff_portal(request):
         'venue': staff.venue
     }
     return render(request, 'core/staff_app.html', context)
+
+def db_health_check(request):
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+        return HttpResponse("SUCCESS: PostgreSQL Database is fully connected and operational.")
+    except Exception as e:
+        return HttpResponse(f"FAILURE: Database connection failed. Error: {str(e)}", status=500)
