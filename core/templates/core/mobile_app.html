@@ -39,7 +39,7 @@
         <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
             <a href="{% url 'home' %}" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
                 <svg class="w-6 h-6 text-[#02DEE5]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-                <span class="text-sm font-black uppercase tracking-tighter">RapidResQ</span>
+                <span class="text-sm font-black uppercase tracking-normal">RapidResQ</span>
             </a>
             <div class="flex items-center gap-4">
                 <div class="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-full border border-white/5">
@@ -61,7 +61,7 @@
         <!-- SOS TRIGGER UI -->
         <div id="sos-ui" class="w-full flex flex-col items-center">
             <div class="text-center mb-12">
-                <h1 class="text-4xl font-extrabold tracking-tighter mb-2 uppercase">Emergency SOS</h1>
+                <h1 class="text-4xl font-extrabold tracking-normal mb-2 uppercase">Emergency SOS</h1>
                 <p class="text-xs text-gray-500 font-bold uppercase tracking-[0.2em]">Priority Dispatch Protocol</p>
             </div>
             <div class="relative w-full h-20 bg-white/5 rounded-3xl flex items-center px-2 border border-white/5 overflow-hidden" id="slider-container">
@@ -87,7 +87,12 @@
                 <div class="w-1.5 h-10 bg-cyan-400 animate-[bounce_1.2s_infinite]"></div>
                 <div class="w-1.5 h-6 bg-cyan-300 animate-[bounce_0.8s_infinite]"></div>
             </div>
-            <p id="voice-status" class="text-[10px] font-black text-cyan-500 uppercase tracking-[0.3em] animate-pulse">Gemini AI Listening...</p>
+            <p id="voice-status" class="text-[10px] font-black text-cyan-500 uppercase tracking-[0.3em] animate-pulse">RapidResQ AI Listening...</p>
+            
+            <!-- Force Alert Button -->
+            <button onclick="triggerFallbackAlert('User Forced Alert')" class="mt-8 text-[9px] font-black text-gray-500 hover:text-white uppercase tracking-[0.2em] border border-white/10 px-6 py-3 rounded-xl transition-all">
+                Taking too long? Force Alert
+            </button>
         </div>
 
         <!-- EVACUATION / SURVIVAL UI -->
@@ -95,11 +100,36 @@
             <div id="evac-icon" class="w-20 h-20 bg-red-500 rounded-full flex items-center justify-center mb-8 animate-pulse shadow-[0_0_50px_rgba(239,68,68,0.4)]">
                 <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
             </div>
-            <h1 id="evac-title" class="text-5xl font-black tracking-tighter mb-4 uppercase text-red-500 leading-none">Evacuate</h1>
+            <h1 id="evac-title" class="text-5xl font-black tracking-normal mb-4 uppercase text-red-500 leading-none">Evacuate</h1>
             
             <div id="safety-box" class="w-full glass-panel p-6 rounded-2xl text-left border-l-4 border-cyan-500 mb-8">
                 <p class="text-[10px] font-black text-cyan-400 uppercase tracking-widest mb-2">Institutional Instructions</p>
                 <p id="safety-text" class="text-sm font-bold text-white leading-tight">Emergency responders are responding.</p>
+            </div>
+
+            <!-- Task 3: Dynamic Interaction Elements -->
+            <div id="medical-interaction" class="hidden w-full space-y-4 mb-8">
+                <div class="glass-panel p-4 rounded-xl border-emerald-500/20">
+                    <p class="text-[9px] font-black text-emerald-400 uppercase tracking-widest mb-3">Ambulance Dispatch Active</p>
+                    <div class="flex items-center justify-between bg-black/40 p-3 rounded-lg border border-white/5">
+                        <span class="text-[10px] font-bold text-gray-400 uppercase">Estimated Arrival</span>
+                        <span id="ambulance-timer" class="text-lg font-black text-emerald-500 tracking-normal">10:00</span>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <input type="text" id="medical-condition-input" class="flex-grow bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-emerald-500" placeholder="Describe condition (e.g. Bleeding)">
+                    <button onclick="sendMedicalUpdate()" class="bg-emerald-500 text-black px-4 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-transform active:scale-95">Send</button>
+                </div>
+            </div>
+
+            <div id="security-status" class="hidden w-full mb-8">
+                <div class="bg-red-500/10 border border-red-500/20 p-4 rounded-xl flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-2 h-2 bg-red-500 rounded-full animate-ping"></div>
+                        <span class="text-[10px] font-black text-red-500 uppercase tracking-widest">Command Alerted</span>
+                    </div>
+                    <span class="text-[9px] font-bold text-gray-400 uppercase">Police: EN ROUTE</span>
+                </div>
             </div>
 
             <!-- Task 2: Safety Instructions Card -->
@@ -109,13 +139,14 @@
             </div>
 
             <!-- Floor Plan Map -->
-            <div class="w-full glass-panel p-6 rounded-3xl mb-8 text-left">
-                <h3 class="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-4">Tactical Exit Route</h3>
+            <div class="w-full glass-panel p-6 rounded-3xl mb-8 text-left relative">
+                <h3 class="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-4" id="nav-title">Tactical Exit Route</h3>
                 <div class="w-full aspect-square bg-black rounded-2xl overflow-hidden border border-white/5 relative">
-                    <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80" class="w-full h-full object-cover opacity-40 grayscale contrast-125">
-                    <div class="absolute inset-0 flex items-center justify-center">
-                        <div class="w-4 h-4 bg-green-500 rounded-full animate-ping"></div>
-                    </div>
+                    <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80" class="absolute inset-0 w-full h-full object-cover opacity-30 grayscale contrast-125 pointer-events-none">
+                    <canvas id="nav-canvas" width="300" height="300" class="absolute inset-0 w-full h-full z-10"></canvas>
+                </div>
+                <div id="audio-alert-container" class="mt-4 text-center">
+                    <p id="audio-status" class="text-[10px] font-bold text-[#02DEE5] uppercase tracking-widest animate-pulse hidden">🔊 Playing Alert Audio...</p>
                 </div>
             </div>
 
@@ -133,127 +164,371 @@
             <button onclick="location.reload()" class="w-full bg-white/5 border border-white/10 text-white py-5 rounded-2xl text-xs font-black uppercase tracking-[0.2em] mt-auto">
                 Stop Alarm / I am Safe
             </button>
+
+            <!-- Task 4.3: Persistence - First Aid Guides Toggle -->
+            <button onclick="toggleFirstAid()" class="mt-4 text-[9px] font-black text-gray-500 hover:text-white uppercase tracking-[0.2em] flex items-center gap-2">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12h6m-3-3v6m9-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                View First Aid Guides
+            </button>
+
+            <div id="first-aid-guides" class="hidden w-full mt-6 space-y-3 pb-20">
+                <div class="glass-panel p-4 rounded-xl text-left border-white/5">
+                    <p class="text-[9px] font-black text-cyan-400 uppercase mb-2">Bleeding Control</p>
+                    <p class="text-[10px] text-gray-400 leading-tight">Apply direct pressure with a clean cloth. Elevate the limb above heart level.</p>
+                </div>
+                <div class="glass-panel p-4 rounded-xl text-left border-white/5">
+                    <p class="text-[9px] font-black text-cyan-400 uppercase mb-2">Choking / CPR</p>
+                    <p class="text-[10px] text-gray-400 leading-tight">Perform 30 chest compressions followed by 2 breaths. Repeat until help arrives.</p>
+                </div>
+            </div>
         </div>
 
     </div>
 
+    <!-- Task 4.1: Prominent Floating Chat UI -->
+    <div id="chat-widget" class="hidden fixed bottom-6 right-6 z-[100]">
+        <!-- Chat Bubble with Label -->
+        <div class="flex flex-col items-center gap-2">
+            <span class="bg-black/80 backdrop-blur-md text-[8px] font-black text-white px-2 py-1 rounded-full border border-white/10 shadow-xl uppercase tracking-widest">Live Help</span>
+            <button id="chat-bubble" class="w-16 h-16 bg-[#02DEE5] rounded-full shadow-[0_0_30px_rgba(2,222,229,0.3)] flex items-center justify-center animate-pulse border-4 border-black group active:scale-95 transition-transform">
+                <svg class="w-7 h-7 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+            </button>
+        </div>
+
+        <!-- Chat Window -->
+        <div id="chat-window" class="hidden absolute bottom-16 right-0 w-[300px] h-[400px] bg-[#0f0f0f] border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            <div class="p-4 border-b border-white/5 bg-black/40 flex justify-between items-center">
+                <div>
+                    <h4 class="text-[10px] font-black uppercase tracking-widest text-white">Command Center</h4>
+                    <div class="flex items-center gap-1">
+                        <div class="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                        <span class="text-[8px] font-bold text-gray-500 uppercase tracking-widest">Live / Online</span>
+                    </div>
+                </div>
+                <button id="close-chat" class="text-gray-500 hover:text-white"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+            </div>
+            
+            <div id="chat-messages" class="flex-grow p-4 overflow-y-auto space-y-4 text-[11px]">
+                <div class="bg-white/5 p-3 rounded-xl rounded-tl-none border border-white/5 max-w-[80%]">
+                    <p class="text-gray-400">Connected to Command. How can we assist you?</p>
+                </div>
+            </div>
+
+            <!-- Quick Tap Messages -->
+            <div class="p-2 flex gap-2 overflow-x-auto border-t border-white/5 bg-black/20 no-scrollbar">
+                <button onclick="sendQuickMessage('I AM TRAPPED')" class="whitespace-nowrap px-3 py-1.5 bg-white/5 border border-white/5 rounded-full text-[8px] font-bold text-gray-400 uppercase tracking-widest hover:bg-[#02DEE5] hover:text-black transition-colors">I'm Trapped</button>
+                <button onclick="sendQuickMessage('NEED WATER')" class="whitespace-nowrap px-3 py-1.5 bg-white/5 border border-white/5 rounded-full text-[8px] font-bold text-gray-400 uppercase tracking-widest hover:bg-[#02DEE5] hover:text-black transition-colors">Need Water</button>
+                <button onclick="sendQuickMessage('HEAVY BLEEDING')" class="whitespace-nowrap px-3 py-1.5 bg-white/5 border border-white/5 rounded-full text-[8px] font-bold text-gray-400 uppercase tracking-widest hover:bg-[#02DEE5] hover:text-black transition-colors">Bleeding</button>
+            </div>
+
+            <div class="p-4 border-t border-white/5 bg-black/40 flex gap-2">
+                <button id="chat-mic" class="p-2 bg-white/5 rounded-xl border border-white/5 text-gray-500 hover:text-[#02DEE5]"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-20a3 3 0 013 3v5a3 3 0 01-3 3 3 3 0 01-3-3V6a3 3 0 013-3z"></path></svg></button>
+                <input type="text" id="chat-input" class="flex-grow bg-black/50 border border-white/5 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-[#02DEE5]" placeholder="Type help...">
+                <button id="chat-send" class="p-2 bg-[#02DEE5] rounded-xl text-black"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg></button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const sosSlider = document.getElementById('sos-slider');
-            const sosThumb = document.getElementById('sos-thumb');
-            const sliderContainer = document.getElementById('slider-container');
-            const sosUi = document.getElementById('sos-ui');
-            const undoUi = document.getElementById('undo-ui');
-            const voiceUi = document.getElementById('voice-ui');
-            const evacUi = document.getElementById('evac-ui');
-            const undoTimer = document.getElementById('undo-timer');
-            const safetyText = document.getElementById('safety-text');
-            const strobeLayer = document.getElementById('strobe-layer');
-            const offlineBar = document.getElementById('offline-bar');
-            const offlineSurvivalCard = document.getElementById('offline-survival-card');
-            const offlineChatUi = document.getElementById('offline-chat-ui');
+        // --- Core Configuration & State ---
+        let socket = null;
+        let chatSocket = null;
+        let currentLat = 0, currentLng = 0;
+        let analysisTimeout = null;
+        let isOffline = !navigator.onLine;
 
-            let socket = null;
-            let currentLat = 0, currentLng = 0;
-            let countdown = null;
-            let isOffline = !navigator.onLine;
+        const UI = {
+            sos: document.getElementById('sos-ui'),
+            voice: document.getElementById('voice-ui'),
+            undo: document.getElementById('undo-ui'),
+            evac: document.getElementById('evac-ui'),
+            slider: document.getElementById('sos-slider'),
+            thumb: document.getElementById('sos-thumb'),
+            status: document.getElementById('voice-status'),
+            timer: document.getElementById('undo-timer')
+        };
 
-            // 1. Offline Detection & UI
-            window.addEventListener('online', () => { isOffline = false; offlineBar.classList.add('hidden'); });
-            window.addEventListener('offline', () => { isOffline = true; offlineBar.classList.remove('hidden'); });
-            if (isOffline) offlineBar.classList.remove('hidden');
-
-            function connectWS() {
-                if (isOffline) return;
-                const protocol = location.protocol === 'https:' ? 'wss://' : 'ws://';
-                socket = new WebSocket(`${protocol}${location.host}/ws/alerts/`);
-                socket.onclose = () => setTimeout(connectWS, 2000);
-                socket.onmessage = (e) => {
-                    const data = JSON.parse(e.data);
-                    if (data.type === 'emergency_confirmed') showEvacuation(data);
-                };
-            }
-            connectWS();
-
-            navigator.geolocation.watchPosition(pos => {
-                currentLat = pos.coords.latitude; currentLng = pos.coords.longitude;
-                document.getElementById('gps-status-indicator').className = 'w-1.5 h-1.5 rounded-full bg-green-500';
-            }, null, { enableHighAccuracy: true });
-
-            sosSlider.addEventListener('input', (e) => {
-                const max = sliderContainer.clientWidth - sosThumb.clientWidth - 16;
-                sosThumb.style.transform = `translateX(${(e.target.value/100) * max}px)`;
+        // --- 1. RESET & TRIGGER MECHANISM (FLUID SLIDER) ---
+        function initSOSMechanism() {
+            UI.slider.addEventListener('input', (e) => {
+                const val = e.target.value;
+                const containerWidth = document.getElementById('slider-container').clientWidth;
+                const maxTranslate = containerWidth - UI.thumb.clientWidth - 16;
+                UI.thumb.style.transform = `translateX(${(val/100) * maxTranslate}px)`;
+                
+                // Visual heat feedback
+                const redIntensity = Math.floor((val/100) * 255);
+                UI.thumb.style.backgroundColor = `rgb(${redIntensity}, 38, 38)`;
             });
 
-            sosSlider.addEventListener('change', (e) => {
-                if(e.target.value >= 95) startSOSSequence();
-                else { sosSlider.value = 0; sosThumb.style.transform = 'translateX(0px)'; }
+            UI.slider.addEventListener('change', (e) => {
+                if(e.target.value >= 95) {
+                    executeSOS();
+                } else {
+                    // Snap back
+                    UI.slider.value = 0;
+                    UI.thumb.style.transform = 'translateX(0px)';
+                    UI.thumb.style.backgroundColor = '#dc2626';
+                }
             });
+        }
 
-            function startSOSSequence() {
-                sosUi.classList.add('hidden');
-                undoUi.classList.replace('hidden', 'flex');
-                let time = 3;
-                countdown = setInterval(() => {
-                    time--; undoTimer.textContent = time;
-                    if(time <= 0) {
-                        clearInterval(countdown);
-                        if (isOffline) triggerLocalBeacon();
-                        else startVoiceAI();
-                    }
-                }, 1000);
+        function executeSOS() {
+            // Instant UI Switch to Dark Pulsing Screen
+            UI.sos.classList.add('hidden');
+            UI.voice.classList.replace('hidden', 'flex');
+            UI.status.textContent = "RapidResQ AI is Listening...";
+            
+            // Task 1.3: Start Web Speech API Immediately
+            startVoiceCapture();
+        }
+
+        // --- 2. STABILIZED VOICE PROCESSING ---
+        function startVoiceCapture() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                fallbackToManualDispatch("Speech API Unsupported");
+                return;
             }
 
-            function triggerLocalBeacon() {
-                undoUi.classList.add('hidden');
-                strobeLayer.classList.replace('hidden', 'strobe-active');
-                offlineSurvivalCard.classList.remove('hidden');
-                offlineChatUi.classList.remove('hidden');
-                
-                if (navigator.vibrate) navigator.vibrate([500, 200, 500, 200, 500]);
-                
-                showEvacuation({ safety_guide: "NETWORK LOSS. Switch to Local Beacon mode. Rescuers alerted via physical signals." });
-            }
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
 
-            window.broadcastLocal = function(template) {
-                const confirm = document.getElementById('local-confirm');
-                confirm.classList.remove('hidden');
-                confirm.textContent = `Emitting Signal: ${template}`;
+            recognition.onstart = () => {
+                console.log("Mic Active");
                 if (navigator.vibrate) navigator.vibrate(100);
-                setTimeout(() => confirm.classList.add('hidden'), 3000);
             };
 
-            function startVoiceAI() {
-                undoUi.classList.add('hidden');
-                voiceUi.classList.replace('hidden', 'flex');
-                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                if (!SpeechRecognition) { sendTranscript("Recognition Unsupported"); return; }
-                const rec = new SpeechRecognition();
-                rec.continuous = false; rec.interimResults = false; rec.onresult = (e) => {
-                    document.getElementById('voice-status').textContent = "AI Processing...";
-                    sendTranscript(e.results[0][0].transcript);
-                };
-                rec.onerror = () => sendTranscript("Voice Error");
-                rec.start();
-            }
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                UI.status.textContent = "RapidResQ AI ANALYZING...";
+                sendSOSSignal(transcript);
+                
+                // Timeout Guard: 7s
+                analysisTimeout = setTimeout(() => fallbackToManualDispatch("AI Latency"), 7000);
+            };
 
-            function sendTranscript(text) {
-                if (socket && socket.readyState === WebSocket.OPEN) {
-                    socket.send(JSON.stringify({ type: 'raw_voice_transcript', transcript: text, location: `Lat: ${currentLat.toFixed(5)}, Lng: ${currentLng.toFixed(5)}` }));
-                } else {
-                    triggerLocalBeacon();
+            recognition.onerror = (err) => {
+                console.error("Mic Error:", err.error);
+                fallbackToManualDispatch("Voice capture failed");
+            };
+
+            recognition.onend = () => recognition.stop();
+            recognition.start();
+        }
+
+        function fallbackToManualDispatch(reason) {
+            console.warn("Manual Fallback:", reason);
+            showEvacuation({
+                category: "🚨 SOS DISPATCHED",
+                safety_guide: "AI offline. Help is arriving. Evacuate via nearest exit.",
+                voice_message: "Emergency alert active. Help is on the way."
+            });
+        }
+
+        // --- 3. SYSTEM SYNC ---
+        function connectAlerts() {
+            if (!navigator.onLine) return;
+            const protocol = location.protocol === 'https:' ? 'wss://' : 'ws://';
+            socket = new WebSocket(`${protocol}${location.host}/ws/alerts/`);
+            
+            socket.onmessage = (e) => {
+                const data = JSON.parse(e.data);
+                if (data.type === 'emergency_confirmed') {
+                    if (analysisTimeout) clearTimeout(analysisTimeout);
+                    showEvacuation(data);
                 }
+            };
+            socket.onclose = () => setTimeout(connectAlerts, 2000);
+        }
+
+        function sendSOSSignal(transcript) {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                    type: 'raw_voice_transcript',
+                    transcript: transcript,
+                    location: `Lat: ${currentLat.toFixed(5)}, Lng: ${currentLng.toFixed(5)}`
+                }));
+            } else {
+                triggerLocalBeacon();
+            }
+        }
+
+        // --- Dynamic UI State Management ---
+        function sendMedicalUpdate() {
+            const input = document.getElementById('medical-condition-input');
+            if (input.value && chatSocket) {
+                chatSocket.send(JSON.stringify({message: `Condition: ${input.value}`, sender_id: 'user'}));
+                input.value = '';
+                if (navigator.vibrate) navigator.vibrate(50);
+            }
+        }
+
+        function startAmbulanceCountdown() {
+            let time = 600; // 10 minutes
+            const timerDisplay = document.getElementById('ambulance-timer');
+            const interval = setInterval(() => {
+                const mins = Math.floor(time / 60);
+                const secs = time % 60;
+                timerDisplay.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+                if (--time < 0) clearInterval(interval);
+            }, 1000);
+        }
+
+        function showEvacuation(data) {
+            UI.voice.classList.add('hidden');
+            UI.sos.classList.add('hidden');
+            UI.undo.classList.add('hidden');
+            
+            const evacTitle = document.getElementById('evac-title');
+            const safetyText = document.getElementById('safety-text');
+            const medUI = document.getElementById('medical-interaction');
+            const secUI = document.getElementById('security-status');
+            const evacIcon = document.getElementById('evac-icon');
+            const safetyBox = document.getElementById('safety-box');
+
+            // Reset dynamic states
+            medUI.classList.add('hidden');
+            secUI.classList.add('hidden');
+            evacTitle.className = "text-5xl font-black tracking-normal mb-4 uppercase leading-none"; // Reset classes
+
+            let eta = "Calculating...";
+            let themeColor = "#ef4444"; // Default Red
+
+            // 1. Task 1 & 3: Mapping & ETAs
+            if (data.case_type === 'MEDICAL_CASE') {
+                evacTitle.textContent = "🚨 MEDICAL EMERGENCY";
+                data.safety_guide = "Medical team dispatched. Please tell us: What is the patient's condition? (Breathing issue, Injury, or Unconscious?)";
+                eta = "Ambulance ETA: 4-6 MINS";
+                themeColor = "#1F76F3"; // Blue for Medical
+                medUI.classList.remove('hidden');
+                evacTitle.classList.add('text-blue-500');
+                evacIcon.style.backgroundColor = themeColor;
+                safetyBox.style.borderLeftColor = themeColor;
+                startAmbulanceCountdown();
+            } 
+            else if (data.case_type === 'FIRE_CASE') {
+                evacTitle.textContent = "🚨 FIRE EMERGENCY";
+                eta = "Firefighter ETA: 5-8 MINS";
+                themeColor = "#f97316"; // Orange for Fire
+                evacTitle.classList.add('text-orange-500');
+                evacIcon.style.backgroundColor = themeColor;
+                safetyBox.style.borderLeftColor = themeColor;
+            }
+            else if (data.case_type === 'SECURITY_CASE') {
+                evacTitle.textContent = "🚨 SECURITY ALERT";
+                eta = "Police ETA: 3-5 MINS";
+                themeColor = "#eab308"; // Yellow for Security
+                secUI.classList.remove('hidden');
+                evacTitle.classList.add('text-yellow-500');
+                evacIcon.style.backgroundColor = themeColor;
+                safetyBox.style.borderLeftColor = themeColor;
+            } else {
+                evacTitle.textContent = "🚨 SOS ACTIVE";
+                evacTitle.classList.add('text-red-500');
             }
 
-            function showEvacuation(data) {
-                voiceUi.classList.add('hidden');
-                sosUi.classList.add('hidden');
-                undoUi.classList.add('hidden');
-                safetyText.textContent = data.safety_guide;
-                evacUi.classList.replace('hidden', 'flex');
+            safetyText.innerHTML = `${data.safety_guide}<br><br><span class="text-[10px] font-black uppercase tracking-[0.2em]" style="color: ${themeColor}">${eta}</span>`;
+            
+            if (UI.status) UI.status.textContent = "Active Response";
+            UI.evac.classList.replace('hidden', 'flex');
+            
+            renderNavigation(data.category, data.case_type);
+            
+            // 4. Voice Sync with exact instruction
+            playAlertAudio(data.safety_guide, () => {
+                // Task 1.4: Keep mic active for Medical follow-up
+                if (data.case_type === 'MEDICAL_CASE') {
+                    setTimeout(() => startVoiceCapture(), 1000);
+                }
+            });
+
+            if (data.incident_id) initChat(data.incident_id);
+        }
+
+        function renderNavigation(category, caseType) {
+            const canvas = document.getElementById('nav-canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw Basic Route
+            ctx.strokeStyle = '#02DEE5'; ctx.lineWidth = 5; ctx.beginPath();
+            ctx.setLineDash([10, 5]); ctx.moveTo(50, 50); ctx.lineTo(250, 250); ctx.stroke();
+            ctx.setLineDash([]);
+
+            // YOU Marker
+            ctx.fillStyle = '#1F76F3'; ctx.beginPath(); ctx.arc(50, 50, 8, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = 'white'; ctx.font = 'bold 8px sans-serif'; ctx.fillText('YOU', 42, 40);
+
+            // Case-Specific EXIT Marker
+            if (caseType === 'SECURITY_CASE') {
+                // Police Marker
+                ctx.fillStyle = '#1F76F3'; ctx.beginPath(); ctx.arc(200, 100, 10, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = 'white'; ctx.lineWidth = 2; ctx.stroke();
+                ctx.fillStyle = 'white'; ctx.fillText('POLICE', 185, 85);
             }
 
-            document.getElementById('abort-btn').onclick = () => { clearInterval(countdown); location.reload(); };
+            const exitColor = (caseType === 'MEDICAL_CASE') ? '#10b981' : '#ef4444';
+            const exitLabel = (caseType === 'MEDICAL_CASE') ? 'MED-BAY' : 'EXIT';
+            
+            ctx.fillStyle = exitColor; ctx.beginPath(); ctx.arc(250, 250, 12, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = 'white'; ctx.fillText(exitLabel, 235, 235);
+        }
+
+        function triggerLocalBeacon() {
+            document.getElementById('strobe-layer').classList.replace('hidden', 'strobe-active');
+            showEvacuation({ category: "OFFLINE SOS", safety_guide: "Network lost. Local beacon active." });
+        }
+
+        function toggleFirstAid() {
+            const guides = document.getElementById('first-aid-guides');
+            guides.classList.toggle('hidden');
+            if (!guides.classList.contains('hidden')) {
+                guides.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        function initChat(id) {
+            document.getElementById('chat-widget').classList.remove('hidden');
+            const protocol = location.protocol === 'https:' ? 'wss://' : 'ws://';
+            chatSocket = new WebSocket(`${protocol}${location.host}/ws/chat/${id}/`);
+            chatSocket.onmessage = (e) => {
+                const data = JSON.parse(e.data);
+                const msgBox = document.getElementById('chat-messages');
+                const div = document.createElement('div');
+                div.className = data.sender_id === 'user' ? "bg-cyan-500 text-black p-2 rounded-lg ml-auto" : "bg-white/10 p-2 rounded-lg";
+                div.innerHTML = `<p class='text-[10px]'>${data.message}</p>`;
+                msgBox.appendChild(div);
+                msgBox.scrollTop = msgBox.scrollHeight;
+            };
+        }
+
+        window.sendQuickMessage = (text) => { if(chatSocket) chatSocket.send(JSON.stringify({message: text, sender_id: 'user'})); };
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initSOSMechanism();
+            connectAlerts();
+            
+            navigator.geolocation.watchPosition(pos => {
+                currentLat = pos.coords.latitude;
+                currentLng = pos.coords.longitude;
+                document.getElementById('gps-status-indicator').className = 'w-1.5 h-1.5 rounded-full bg-green-500';
+            });
+
+            document.getElementById('chat-send').onclick = () => {
+                const inp = document.getElementById('chat-input');
+                if(inp.value && chatSocket) {
+                    chatSocket.send(JSON.stringify({message: inp.value, sender_id: 'user'}));
+                    inp.value = '';
+                }
+            };
+            
+            document.getElementById('chat-bubble').onclick = () => document.getElementById('chat-window').classList.toggle('hidden');
+            document.getElementById('close-chat').onclick = () => document.getElementById('chat-window').classList.add('hidden');
+            document.getElementById('abort-btn').onclick = () => location.reload();
         });
     </script>
 </body>

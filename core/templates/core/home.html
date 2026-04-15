@@ -1,240 +1,234 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RapidResQ | Global Emergency Intelligence</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
-    <style>
-        body { background-color: #0b0e14 !important; font-family: 'Plus Jakarta Sans', sans-serif; }
-        .lang-menu { display: none; }
-        .lang-menu.active { display: block; }
-        
-        #mobile-menu { transition: transform 0.3s ease-in-out; transform: translateX(100%); }
-        #mobile-menu.active { transform: translateX(0); }
-        
-        .nav-link-mobile { font-size: 1.5rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: white; padding: 1rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); width: 100%; text-align: center; }
-        
-        .section-title { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.02em; text-transform: uppercase; }
-        .glass-card { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); transition: transform 0.3s, border-color 0.3s; }
-        .glass-card:hover { transform: translateY(-5px); border-color: #02DEE5; }
-        
-        .portal-btn { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); padding: 1.5rem; border-radius: 1rem; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; transition: all 0.3s; text-align: center; min-width: 240px; }
-        .portal-btn:hover { background: #02DEE5; color: black; border-color: #02DEE5; transform: scale(1.02); }
-        
-        .footer-link { color: #9ca3af; transition: color 0.3s; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-        .footer-link:hover { color: #02DEE5; }
-    </style>
-</head>
-<body class="antialiased text-white min-h-screen flex flex-col relative overflow-x-hidden">
+{% extends 'core/base.html' %}
 
-    <!-- Navigation -->
-    <nav class="fixed top-0 w-full z-50 border-b border-white/5 bg-black/40 backdrop-blur-xl">
-        <div class="max-w-7xl mx-auto px-6 lg:px-8 py-5 flex items-center justify-between">
-            <div class="flex-none">
-                <a href="{% url 'home' %}" class="hover:opacity-80 transition-opacity">
-                    <span class="logo-gradient">RapidResQ</span>
-                </a>
-            </div>
+{% block content %}
+    <!-- YZA-style RapidResQ Preloader -->
+    <div id="rrq-preloader" class="fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center transition-transform duration-[1200ms] ease-[cubic-bezier(0.19,1,0.22,1)]">
+        
+        <!-- YzA Counter Top -->
+        <div id="rrq-counter" class="text-white/70 font-mono text-5xl md:text-6xl tracking-widest font-thin mb-8">
+            00
+        </div>
+        
+        <!-- YzA Icon Bottom (Absolute overlaying layers to allow smooth crossfade) -->
+        <div class="relative w-12 h-12 md:w-14 md:h-14 flex items-center justify-center filter drop-shadow-[0_0_15px_rgba(2,222,229,0.4)]">
             
-            <div class="hidden md:flex flex-grow justify-center items-center gap-6 lg:gap-10">
-                <a href="#platform" class="nav-link text-[11px]" data-i18n="nav_platform">Platform</a>
-                <a href="#network" class="nav-link text-[11px]" data-i18n="nav_network">Network</a>
-                <a href="{% url 'responder_login' %}" class="nav-link text-[11px]" data-i18n="nav_portals">Portals</a>
-                <a href="{% url 'features' %}" class="nav-link text-[11px]" data-i18n="nav_features">Features</a>
-                <a href="{% url 'about' %}" class="nav-link text-[11px]" data-i18n="nav_about">About</a>
-                <a href="{% url 'contact' %}" class="nav-link text-[11px]" data-i18n="nav_contact">Contact</a>
-            </div>
+            <!-- Icon 1: Pulse -->
+            <svg id="icon-pulse" class="absolute inset-0 w-full h-full text-[#02DEE5] opacity-100 transition-opacity duration-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="4" class="opacity-40 fill-transparent"/>
+                <circle cx="12" cy="12" r="8" class="opacity-70 fill-transparent"/>
+                <circle cx="12" cy="12" r="12" class="opacity-100 fill-transparent"/>
+            </svg>
 
+            <!-- Icon 2: Flame -->
+            <svg id="icon-flame" class="absolute inset-0 w-full h-full text-[#02DEE5] opacity-0 transition-opacity duration-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 2c0 0-4.5 4.5-4.5 10a4.5 4.5 0 0 0 9 0C16.5 6.5 12 2 12 2z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 14v4"/>
+            </svg>
 
-            <div class="hidden md:flex items-center gap-4 lg:gap-6">
-                <a href="{% url 'venue_login' %}" class="text-[10px] font-bold text-gray-500 hover:text-white uppercase tracking-widest" data-i18n="nav_admin">Admin</a>
-                <a href="{% url 'staff_login' %}" class="px-5 py-2 rounded-full border border-cyan-500/30 text-[10px] font-bold hover:bg-cyan-500 hover:text-black transition-all uppercase tracking-widest" data-i18n="nav_staff">Staff</a>
-            </div>
+            <!-- Icon 3: Cross -->
+            <svg id="icon-cross" class="absolute inset-0 w-full h-full text-[#02DEE5] opacity-0 transition-opacity duration-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" stroke-opacity="0.3"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 7v10M7 12h10"/>
+            </svg>
 
-            <button id="menu-open" class="md:hidden text-[#02DEE5] p-2">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
-            </button>
-        </div>
-    </nav>
+            <!-- Icon 4: Shield -->
+            <svg id="icon-shield" class="absolute inset-0 w-full h-full text-[#02DEE5] opacity-0 transition-opacity duration-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
 
-    <!-- Mobile Menu Overlay -->
-    <div id="mobile-menu" class="fixed inset-0 z-[100] bg-[#0b0e14] flex flex-col p-8 md:hidden">
-        <div class="flex justify-between items-center mb-16">
-            <span class="logo-gradient text-xl">RapidResQ</span>
-            <button id="menu-close" class="text-gray-400 hover:text-white"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
-        </div>
-        <div class="flex flex-col items-center gap-4">
-            <a href="#platform" class="nav-link-mobile" onclick="toggleMenu()">Platform</a>
-            <a href="#network" class="nav-link-mobile" onclick="toggleMenu()">Network</a>
-            <a href="#portals" class="nav-link-mobile" onclick="toggleMenu()">Portals</a>
-            <a href="{% url 'about' %}" class="nav-link-mobile">About</a>
-            <a href="{% url 'contact' %}" class="nav-link-mobile">Contact</a>
-            <a href="{% url 'venue_login' %}" class="nav-link-mobile text-gray-500">Admin Login</a>
-            <a href="{% url 'staff_login' %}" class="mt-8 px-10 py-4 rounded-full bg-cyan-500 text-black font-black uppercase tracking-widest w-full text-center">Staff Access</a>
         </div>
     </div>
 
     <!-- Hero Section -->
-    <section class="min-h-screen flex flex-col items-center justify-center pt-40 pb-24 px-6 text-center">
-        <div class="w-full max-w-5xl">
+    <section id="hero-section-main" class="min-h-[100vh] relative flex flex-col items-center justify-between pt-40 pb-4 px-6 text-center overflow-hidden bg-[radial-gradient(ellipse_at_bottom,_var(--tw-gradient-stops))] from-[#0a192f] via-black to-black">
+        
+        <!-- Glowing Orbs (Depth) -->
+        <div class="absolute bottom-1/4 left-1/3 w-96 h-96 bg-[#02DEE5] rounded-full blur-[150px] opacity-[0.05] pointer-events-none"></div>
+        <div class="absolute bottom-1/3 right-1/4 w-80 h-80 bg-[#02DEE5] rounded-full blur-[120px] opacity-[0.04] pointer-events-none"></div>
+
+        <div class="w-full max-w-5xl relative z-10 flex flex-col items-center justify-center flex-grow mb-12">
             <span class="px-4 py-1.5 rounded-full border border-cyan-500/20 bg-cyan-500/5 text-[10px] font-bold uppercase tracking-[0.3em] text-cyan-400 mb-8 inline-block" data-i18n="hero_badge">AI-Powered Safety</span>
-            <h1 class="text-5xl md:text-7xl lg:text-9xl font-black tracking-tighter leading-none mb-6 uppercase" data-i18n="hero_title">Zero Latency.</h1>
+            <h1 class="text-5xl md:text-7xl lg:text-9xl font-black tracking-normal leading-none mb-6 uppercase" data-i18n="hero_title">Zero Latency.</h1>
             <h2 class="text-2xl md:text-4xl lg:text-6xl font-bold text-gray-500 tracking-tight mb-12 lg:mb-16 uppercase" data-i18n="hero_subtitle">Instant Dispatch.</h2>
-            <div class="mt-8 flex flex-col items-center gap-12">
-                <a href="/api/app/" class="btn-sos-force px-12 py-6 md:px-20 md:py-8 text-xl md:text-3xl" data-i18n="hero_sos">🚨 INSTANT SOS</a>
+            
+            <div class="mt-8 flex flex-col items-center gap-12 relative">
+                <!-- Inner Orb directly behind SOS -->
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-[#02DEE5] rounded-full blur-[80px] opacity-[0.08] pointer-events-none"></div>
+                
+                <a href="/api/app/" class="btn-sos-force px-12 py-6 md:px-20 md:py-8 text-xl md:text-3xl relative z-10" data-i18n="hero_sos">🚨 INSTANT SOS</a>
+                
                 <div class="flex flex-col sm:flex-row gap-4 items-center opacity-40 hover:opacity-100 transition-opacity">
                     <p class="text-[9px] font-bold uppercase tracking-[0.4em] text-gray-500" data-i18n="onboard_text">Onboarding</p>
                     <a href="{% url 'staff_signup' %}" class="px-10 py-4 rounded-full border border-white/10 font-bold text-[10px] uppercase tracking-widest hover:bg-white/5 transition-all" data-i18n="onboard_btn">Register Facility</a>
                 </div>
             </div>
         </div>
-    </section>
 
-    <!-- Section: Platform -->
-    <section id="platform" class="py-24 lg:py-32 px-6 flex flex-col items-center justify-center text-center bg-black/20">
-        <div class="max-w-7xl w-full">
-            <div class="mb-20">
-                <h2 class="section-title text-gradient mb-4">Platform</h2>
-                <p class="text-gray-500 font-bold uppercase tracking-widest text-[10px]">AI-Driven Crisis Management</p>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div class="glass-card p-10 rounded-3xl flex flex-col items-center">
-                    <div class="w-14 h-14 bg-cyan-500/10 rounded-2xl flex items-center justify-center text-cyan-400 mb-8">
-                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
-                    </div>
-                    <h3 class="text-lg font-bold mb-4 uppercase tracking-widest text-white">Voice Triage</h3>
-                    <p class="text-gray-400 text-sm leading-relaxed">Neural analysis of emergency transcripts for instant categorization and severity assessment.</p>
-                </div>
-                <div class="glass-card p-10 rounded-3xl flex flex-col items-center">
-                    <div class="w-14 h-14 bg-cyan-500/10 rounded-2xl flex items-center justify-center text-cyan-400 mb-8">
-                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                    </div>
-                    <h3 class="text-lg font-bold mb-4 uppercase tracking-widest text-white">Smart Routing</h3>
-                    <p class="text-gray-400 text-sm leading-relaxed">Haversine-based proximity logic identifying the 3 nearest available responders in milliseconds.</p>
-                </div>
-                <div class="glass-card p-10 rounded-3xl flex flex-col items-center">
-                    <div class="w-14 h-14 bg-cyan-500/10 rounded-2xl flex items-center justify-center text-cyan-400 mb-8">
-                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
-                    </div>
-                    <h3 class="text-lg font-bold mb-4 uppercase tracking-widest text-white">Tactical Maps</h3>
-                    <p class="text-gray-400 text-sm leading-relaxed">Live floor plans and GPS telemetry synchronized across the entire institutional infrastructure.</p>
-                </div>
-            </div>
+        <!-- Scroll Indicator (Section Divider) -->
+        <div class="w-full flex justify-center pb-8 mt-auto relative z-10 opacity-40 flex-col items-center gap-2">
+            <span class="text-[8px] font-bold uppercase tracking-[0.4em] text-cyan-500">How It Works</span>
+            <svg class="w-6 h-6 text-[#02DEE5] animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
         </div>
     </section>
 
-    <!-- Section: Network -->
-    <section id="network" class="py-24 lg:py-32 px-6 flex flex-col items-center justify-center text-center">
-        <div class="max-w-5xl w-full">
-            <div class="mb-16">
-                <h2 class="section-title text-gradient mb-4">Network</h2>
-                <p class="text-gray-500 font-bold uppercase tracking-widest text-[10px] mb-8">Decentralized Safety Mesh</p>
-                <p class="text-gray-400 text-lg leading-relaxed max-w-2xl mx-auto">
-                    RapidResQ connects fragmented safety nodes into one intelligent emergency network, bridging facilities and responders seamlessly.
-                </p>
+    <!-- Section: Emergency User Guide -->
+    <section id="user-guide" class="pt-12 pb-20 lg:pt-16 lg:pb-24 px-6 flex flex-col items-center justify-center text-center bg-transparent relative z-10">
+        <div class="max-w-7xl w-full">
+            <div class="mb-20">
+                <h2 class="section-title text-gradient mb-4">HOW IT WORKS (USER GUIDE)</h2>
+                <p class="text-gray-500 font-bold uppercase tracking-widest text-[10px]">Follow these 4 simple steps during an emergency.</p>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-12 mt-12">
-                <div class="flex flex-col items-center">
-                    <div class="text-4xl mb-6">🛡️</div>
-                    <h4 class="text-sm font-bold uppercase tracking-widest text-white mb-2">Isolated Data</h4>
-                    <p class="text-gray-500 text-xs uppercase leading-loose font-medium">Encrypted facility silos</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <!-- Step 1 -->
+                <div class="glass-card p-10 rounded-3xl flex flex-col items-center relative overflow-hidden bg-[#0a0d13]">
+                    <div class="absolute -top-6 -right-6 text-9xl font-black text-[#02DEE5] opacity-[0.03] select-none">1</div>
+                    <div class="w-16 h-16 bg-cyan-500/10 rounded-2xl flex items-center justify-center text-cyan-400 mb-8 relative z-10 border border-cyan-500/20 shadow-[0_0_15px_rgba(2,222,229,0.1)]">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-black mb-4 uppercase tracking-widest text-[#02DEE5] relative z-10">Trigger SOS</h3>
+                    <p class="text-gray-300 text-sm leading-relaxed relative z-10 font-medium font-['Plus Jakarta Sans']">Press the Red button for 3 seconds. The system immediately captures your location and ambient audio.</p>
                 </div>
-                <div class="flex flex-col items-center">
-                    <div class="text-4xl mb-6">🔗</div>
-                    <h4 class="text-sm font-bold uppercase tracking-widest text-white mb-2">Inter-connected</h4>
-                    <p class="text-gray-500 text-xs uppercase leading-loose font-medium">Unified responder grid</p>
+                
+                <!-- Step 2 -->
+                <div class="glass-card p-10 rounded-3xl flex flex-col items-center relative overflow-hidden bg-[#0a0d13]">
+                    <div class="absolute -top-6 -right-6 text-9xl font-black text-[#02DEE5] opacity-[0.03] select-none">2</div>
+                    <div class="w-16 h-16 bg-cyan-500/10 rounded-2xl flex items-center justify-center text-cyan-400 mb-8 relative z-10 border border-cyan-500/20 shadow-[0_0_15px_rgba(2,222,229,0.1)]">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-black mb-4 uppercase tracking-widest text-[#02DEE5] relative z-10">AI Voice Triage</h3>
+                    <p class="text-gray-300 text-sm leading-relaxed relative z-10 font-medium font-['Plus Jakarta Sans']">Speak clearly. Our AI analyzes your situation (Fire, Medical, or Security) in real-time.</p>
                 </div>
-                <div class="flex flex-col items-center">
-                    <div class="text-4xl mb-6">☁️</div>
-                    <h4 class="text-sm font-bold uppercase tracking-widest text-white mb-2">City-wide Scale</h4>
-                    <p class="text-gray-500 text-xs uppercase leading-loose font-medium">Massive mesh scalability</p>
+                
+                <!-- Step 3 -->
+                <div class="glass-card p-10 rounded-3xl flex flex-col items-center relative overflow-hidden bg-[#0a0d13]">
+                    <div class="absolute -top-6 -right-6 text-9xl font-black text-[#02DEE5] opacity-[0.03] select-none">3</div>
+                    <div class="w-16 h-16 bg-cyan-500/10 rounded-2xl flex items-center justify-center text-cyan-400 mb-8 relative z-10 border border-cyan-500/20 shadow-[0_0_15px_rgba(2,222,229,0.1)]">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-black mb-4 uppercase tracking-widest text-[#02DEE5] relative z-10">Stay Connected</h3>
+                    <p class="text-gray-300 text-sm leading-relaxed relative z-10 font-medium font-['Plus Jakarta Sans']">The app establishes a high-priority WebSocket link. Even if internet is slow, the emergency signal stays active.</p>
+                </div>
+                
+                <!-- Step 4 -->
+                <div class="glass-card p-10 rounded-3xl flex flex-col items-center relative overflow-hidden bg-[#0a0d13]">
+                    <div class="absolute -top-6 -right-6 text-9xl font-black text-[#02DEE5] opacity-[0.03] select-none">4</div>
+                    <div class="w-16 h-16 bg-cyan-500/10 rounded-2xl flex items-center justify-center text-cyan-400 mb-8 relative z-10 border border-cyan-500/20 shadow-[0_0_15px_rgba(2,222,229,0.1)]">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-black mb-4 uppercase tracking-widest text-[#02DEE5] relative z-10">Help is Coming</h3>
+                    <p class="text-gray-300 text-sm leading-relaxed relative z-10 font-medium font-['Plus Jakarta Sans']">Follow the on-screen tactical map. The 3 nearest responders are already dispatched to your exact coordinate.</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Section: Portals -->
-    <section id="portals" class="py-24 lg:py-32 px-6 flex flex-col items-center justify-center text-center bg-black/20">
+    <!-- Section: Institutional Impact -->
+    <section id="impact" class="relative z-10 py-20 lg:py-24 px-6 flex flex-col items-center justify-center text-center border-t border-white/5 bg-black/40">
         <div class="max-w-7xl w-full">
-            <div class="mb-20">
-                <h2 class="section-title text-gradient mb-4">Portals</h2>
-                <p class="text-gray-500 font-bold uppercase tracking-widest text-[10px]">Unified Access Gateways</p>
-            </div>
-            <div class="flex flex-wrap justify-center gap-6">
-                <a href="{% url 'venue_login' %}" class="portal-btn">Admin Console</a>
-                <a href="{% url 'staff_login' %}" class="portal-btn">Staff Terminal</a>
-                <a href="{% url 'responder_login' %}" class="portal-btn">Responder Hub</a>
+            <h2 class="text-3xl md:text-4xl font-black uppercase tracking-tight text-gradient mb-12">INSTITUTIONAL IMPACT</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
+                <!-- Card 1 -->
+                <div class="glass-card p-8 rounded-3xl flex flex-col items-center justify-center">
+                    <span class="text-4xl md:text-5xl font-black text-[#02DEE5] mb-3 tracking-normal drop-shadow-[0_0_15px_rgba(2,222,229,0.3)]">250ms</span>
+                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest text-center">Socket Latency</span>
+                </div>
+                <!-- Card 2 -->
+                <div class="glass-card p-8 rounded-3xl flex flex-col items-center justify-center">
+                    <span class="text-4xl md:text-5xl font-black text-[#02DEE5] mb-3 tracking-normal drop-shadow-[0_0_15px_rgba(2,222,229,0.3)]">94.2%</span>
+                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest text-center">AI Triage Precision</span>
+                </div>
+                <!-- Card 3 -->
+                <div class="glass-card p-8 rounded-3xl flex flex-col items-center justify-center">
+                    <span class="text-4xl md:text-5xl font-black text-[#02DEE5] mb-3 tracking-normal drop-shadow-[0_0_15px_rgba(2,222,229,0.3)]">&lt; 5m</span>
+                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest text-center">Avg. Response Time</span>
+                </div>
+                <!-- Card 4 -->
+                <div class="glass-card p-8 rounded-3xl flex flex-col items-center justify-center">
+                    <span class="text-4xl md:text-5xl font-black text-[#02DEE5] mb-3 tracking-normal drop-shadow-[0_0_15px_rgba(2,222,229,0.3)]">15+</span>
+                    <span class="text-[9px] font-bold text-gray-400 uppercase tracking-widest text-center">Test Pilot Nodes</span>
+                </div>
             </div>
         </div>
     </section>
 
-    <!-- Floating UI: Language -->
-    <div class="fixed bottom-8 right-8 z-[110]">
-        <div id="lang-menu" class="lang-menu absolute bottom-16 right-0 w-40 bg-[#161b22] border border-white/10 rounded-xl shadow-2xl overflow-hidden mb-2">
-            <button onclick="setLanguage('en')" class="w-full text-left px-4 py-3 text-sm font-bold hover:bg-white/5 transition-colors border-b border-white/5">English</button>
-            <button onclick="setLanguage('hi')" class="w-full text-left px-4 py-3 text-sm font-bold hover:bg-white/5 transition-colors">हिन्दी (Hindi)</button>
+    <!-- Section: Final Signature -->
+    <section class="relative z-10 py-24 px-6 flex flex-col items-center justify-center text-center bg-[#05070a] border-t border-dashed border-[#02DEE5]/30 shadow-[0_-20px_50px_rgba(2,222,229,0.05)]" data-aos="zoom-in" data-aos-duration="1000">
+        <div class="max-w-5xl w-full">
+            <h2 class="text-2xl md:text-4xl font-bold tracking-tight text-white mb-6 uppercase leading-snug drop-shadow-[0_0_15px_rgba(2,222,229,0.4)]">
+                AI FOR ACCURACY. HUMANS FOR EMPATHY. <br class="hidden md:block" /> <span class="normal-case">RapidResQ</span> FOR TIME.
+            </h2>
+            <p class="text-lg md:text-xl text-white/70 italic font-medium tracking-wide mx-auto text-center">
+                "Because minutes matter, seconds save."
+            </p>
         </div>
-        <button onclick="toggleLangMenu()" class="w-14 h-14 bg-cyan-500 text-black rounded-full flex items-center justify-center shadow-xl shadow-cyan-500/20 hover:scale-110 transition-transform">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
-        </button>
-    </div>
+    </section>
+{% endblock %}
 
-    <!-- Footer -->
-    <footer class="bg-[#0b0e14] border-t border-white/5 py-16 px-8 flex flex-col items-center">
-        <div class="max-w-7xl w-full grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
-            <div class="flex flex-col items-center gap-4">
-                <a href="{% url 'home' %}"><span class="logo-gradient">RapidResQ</span></a>
-                <div class="px-4 py-1.5 rounded-full bg-blue-900/20 border border-blue-500/30 text-blue-400 font-bold tracking-wide text-[10px] uppercase">🏆 Google Solution Challenge 2026</div>
-            </div>
-            <div class="flex flex-col gap-4">
-                <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Navigation</h4>
-                <div class="flex flex-col gap-2 items-center">
-                    <a href="{% url 'about' %}" class="footer-link">About Us</a>
-                    <a href="{% url 'contact' %}" class="footer-link">Contact Us</a>
-                    <a href="#platform" class="footer-link">Platform Infrastructure</a>
-                </div>
-            </div>
-            <div class="flex flex-col gap-4">
-                <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Connect</h4>
-                <div class="flex flex-col gap-2 items-center">
-                    <a href="#" class="footer-link">GitHub Repository</a>
-                    <a href="#" class="footer-link">Institutional Inquiry</a>
-                    <a href="#" class="footer-link">Legal & Privacy</a>
-                </div>
-            </div>
-        </div>
-        <div class="max-w-7xl w-full mt-16 pt-8 border-t border-white/5 text-center">
-            <p class="text-[10px] text-gray-600 font-bold uppercase tracking-widest">© 2026 RapidResQ Intelligence Group. All Rights Reserved.</p>
-        </div>
-    </footer>
+{% block extra_scripts %}
+<script>
+    // Google Custom Translation API inherited from base.html
 
-    <script>
-        const menuOpen = document.getElementById('menu-open');
-        const menuClose = document.getElementById('menu-close');
-        const mobileMenu = document.getElementById('mobile-menu');
-        function toggleMenu() { mobileMenu.classList.toggle('active'); document.body.style.overflow = mobileMenu.classList.contains('active') ? 'hidden' : 'auto'; }
-        menuOpen.onclick = toggleMenu; menuClose.onclick = toggleMenu;
+    // YZA-style Preloader Logic
+    document.addEventListener("DOMContentLoaded", () => {
+        const preloader = document.getElementById('rrq-preloader');
+        const counter = document.getElementById('rrq-counter');
+        const heroSection = document.getElementById('hero-section-main');
+        
+        const icons = [
+            document.getElementById('icon-pulse'),
+            document.getElementById('icon-flame'),
+            document.getElementById('icon-cross'),
+            document.getElementById('icon-shield')
+        ];
 
-        const translations = {
-            'en': { 'nav_platform': 'Platform', 'nav_network': 'Network', 'nav_portals': 'Portals', 'nav_about': 'About', 'nav_contact': 'Contact', 'nav_admin': 'Admin', 'nav_staff': 'Staff', 'hero_badge': 'AI-Powered Safety', 'hero_title': 'Zero Latency.', 'hero_subtitle': 'Instant Dispatch.', 'hero_sos': '🚨 INSTANT SOS', 'onboard_text': 'Onboarding', 'onboard_btn': 'Register Facility' },
-            'hi': { 'nav_platform': 'प्लेटफ़ॉर्म', 'nav_network': 'नेटवर्क', 'nav_portals': 'पोर्टल', 'nav_about': 'के बारे में', 'nav_contact': 'संपर्क', 'nav_admin': 'एडमिन', 'nav_staff': 'स्टाफ', 'hero_badge': 'AI-संचालित सुरक्षा', 'hero_title': 'जीरो लेटेंसी।', 'hero_subtitle': 'तत्काल प्रेषण।', 'hero_sos': '🚨 तत्काल एसओएस', 'onboard_text': 'ऑनबोर्डिंग', 'onboard_btn': 'सुविधा रजिस्टर करें' }
-        };
-        function toggleLangMenu() { document.getElementById('lang-menu').classList.toggle('active'); }
-        function setLanguage(lang) {
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                const key = el.getAttribute('data-i18n');
-                if (translations[lang] && translations[lang][key]) el.textContent = translations[lang][key];
-            });
-            localStorage.setItem('preferred_lang', lang); document.getElementById('lang-menu').classList.remove('active');
+        let progress = 0;
+        
+        // Setup initial hero state
+        if (heroSection) {
+            heroSection.style.transform = 'scale(0.95)';
+            heroSection.style.opacity = '0';
+            heroSection.style.transition = 'all 1.5s cubic-bezier(0.19, 1, 0.22, 1)';
         }
-        window.onload = () => { const saved = localStorage.getItem('preferred_lang') || 'en'; setLanguage(saved); };
-    </script>
-</body>
-</html>
+
+        const interval = setInterval(() => {
+            progress += Math.floor(Math.random() * 4) + 1; // Random increment
+            if (progress >= 100) progress = 100;
+            
+            // Format number
+            counter.innerText = progress.toString().padStart(2, '0');
+            
+            // Rotate Icons based on quarters
+            let activeIndex = 0;
+            if (progress >= 25 && progress < 50) activeIndex = 1;
+            else if (progress >= 50 && progress < 75) activeIndex = 2;
+            else if (progress >= 75) activeIndex = 3;
+
+            icons.forEach((icon, idx) => {
+                if (icon) {
+                    if (idx === activeIndex) {
+                        icon.classList.remove('opacity-0');
+                        icon.classList.add('opacity-100');
+                    } else {
+                        icon.classList.remove('opacity-100');
+                        icon.classList.add('opacity-0');
+                    }
+                }
+            });
+
+            if (progress === 100) {
+                clearInterval(interval);
+                // Slide up after a tiny delay to pause on 100
+                setTimeout(() => {
+                    preloader.style.transform = 'translateY(-100%)';
+                    if (heroSection) {
+                        heroSection.style.transform = 'scale(1)';
+                        heroSection.style.opacity = '1';
+                    }
+                    setTimeout(() => preloader.remove(), 1200); // DOM Cleanup
+                }, 400);
+            }
+        }, 35); // Run pace
+    });
+</script>
+{% endblock %}

@@ -24,19 +24,26 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-u$pu0+@gkkm67eriqsmpe%w%rpa%o21%s2jzs(&iaw!@0n$uy6')
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-local-dev-only-replace-in-production')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DJANGO_DEBUG', 'False').lower() in ('true', '1', 't')
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
-CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost').split(',')
-
-# Production Security Headers
+# Production Security Headers (all controlled via environment variables)
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
-SECURE_SSL_REDIRECT = os.getenv('SECURE_SSL_REDIRECT', 'False').lower() in ('true', '1')
+
+# SSL / HTTPS settings — set HTTPS=true in .env on Railway/Render
+_HTTPS = os.getenv('HTTPS', 'False').lower() in ('true', '1')
+SECURE_SSL_REDIRECT = _HTTPS
+SECURE_HSTS_SECONDS = 31536000 if _HTTPS else 0  # 1 year when HTTPS is active
+SECURE_HSTS_INCLUDE_SUBDOMAINS = _HTTPS
+SECURE_HSTS_PRELOAD = _HTTPS
+SESSION_COOKIE_SECURE = _HTTPS
+CSRF_COOKIE_SECURE = _HTTPS
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https') if _HTTPS else None
 
 
 # Application definition
@@ -138,13 +145,13 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-# Security hardening for deployment
+# CSRF Trusted Origins (extend via env var)
 CSRF_TRUSTED_ORIGINS = [
     "https://*.railway.app",
     "https://*.render.com",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
-]
+] + [o for o in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',') if o]
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'

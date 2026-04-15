@@ -1,0 +1,67 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Safety Drills & Training | RapidResQ{% endblock %}
+
+{% block content %}
+    <main class="flex-grow flex flex-col items-center pt-40 px-6 pb-24">
+        <div class="max-w-5xl w-full text-center mb-16">
+            <span class="px-4 py-1.5 rounded-full border border-orange-500/20 bg-orange-500/5 text-[10px] font-bold uppercase tracking-[0.3em] text-orange-500 mb-6 inline-block">Preparation Protocol</span>
+            <h1 class="text-4xl md:text-6xl font-black tracking-normal mb-6 text-gradient uppercase">Safety Drills & Training</h1>
+            <p class="text-gray-400 font-medium text-lg max-w-2xl mx-auto mb-10">
+                Familiarize yourself with the institutional crisis standards before triggering structural alarms.
+            </p>
+            
+            <a href="{% url 'home' %}" class="inline-flex items-center gap-3 px-8 py-4 bg-orange-500/10 border border-orange-500 hover:bg-orange-500 transition-colors rounded-full text-white hover:text-black font-black uppercase tracking-widest text-sm shadow-[0_0_20px_rgba(249,115,22,0.3)]">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Launch Mock Drill (Simulated SOS)
+            </a>
+        </div>
+
+        <div class="max-w-5xl w-full grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Fire -->
+            <div class="glass-card p-10 rounded-[2rem] border-red-500/10 hover:border-red-500/50 flex flex-col items-start transition-colors">
+                <div class="w-14 h-14 bg-red-500/10 rounded-2xl flex items-center justify-center text-red-500 mb-6">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z"></path></svg>
+                </div>
+                <h3 class="text-xl font-bold uppercase tracking-widest text-red-500 mb-4">Fire Outbreak</h3>
+                <ol class="list-decimal list-inside text-gray-400 space-y-3 leading-relaxed text-sm ml-2">
+                    <li>Activate nearest pull station.</li>
+                    <li>Open RapidResQ app & press SOS.</li>
+                    <li>Select "Fire" from the voice prompt.</li>
+                    <li>Follow the dynamic green evacuation path shown on the Tactical Map.</li>
+                    <li>Do not use elevators.</li>
+                </ol>
+            </div>
+
+            <!-- Medical -->
+            <div class="glass-card p-10 rounded-[2rem] border-cyan-500/10 hover:border-cyan-500/50 flex flex-col items-start transition-colors">
+                <div class="w-14 h-14 bg-cyan-500/10 rounded-2xl flex items-center justify-center text-[#02DEE5] mb-6">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                </div>
+                <h3 class="text-xl font-bold uppercase tracking-widest text-[#02DEE5] mb-4">Medical Emergency</h3>
+                <ol class="list-decimal list-inside text-gray-400 space-y-3 leading-relaxed text-sm ml-2">
+                    <li>Ensure area safety first.</li>
+                    <li>Hold SOS for 3 seconds.</li>
+                    <li>Speak clearly into the AI voice prompt detailing the patient condition.</li>
+                    <li>Wait for Haversine logic to dispatch the closest internal medical staff.</li>
+                    <li>Administer basic first aid if trained.</li>
+                </ol>
+            </div>
+
+            <!-- Security Threat -->
+            <div class="glass-card p-10 rounded-[2rem] border-purple-500/10 hover:border-purple-500/50 flex flex-col items-start transition-colors">
+                <div class="w-14 h-14 bg-purple-500/10 rounded-2xl flex items-center justify-center text-purple-500 mb-6">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                </div>
+                <h3 class="text-xl font-bold uppercase tracking-widest text-purple-500 mb-4">Security Threat</h3>
+                <ol class="list-decimal list-inside text-gray-400 space-y-3 leading-relaxed text-sm ml-2">
+                    <li>Avoid confronting the threat.</li>
+                    <li>Trigger Silent SOS (Triple Tap).</li>
+                    <li>The AI will listen to ambient noise to verify threat escalation.</li>
+                    <li>Barricade your location using the app's 'Lockdown' mode.</li>
+                    <li>Await Police clearance via Push Notification.</li>
+                </ol>
+            </div>
+        </div>
+    </main>
+{% endblock %}

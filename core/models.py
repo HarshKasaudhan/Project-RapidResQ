@@ -12,6 +12,7 @@ class CustomUser(AbstractUser):
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='Guest')
     phone_number = models.CharField(max_length=20, blank=True)
     native_language = models.CharField(max_length=10, default='en')
+    facility = models.ForeignKey('Venue', on_delete=models.SET_NULL, null=True, blank=True, related_name='users')
 
     def __str__(self):
         return f"{self.username} - {self.role}"
@@ -19,7 +20,7 @@ class CustomUser(AbstractUser):
 class Venue(models.Model):
     hotel_name = models.CharField(max_length=255)
     unique_venue_id = models.CharField(max_length=50, unique=True)
-    admin_password = models.CharField(max_length=128)
+    admin_password = models.CharField(max_length=128, blank=True) # Optional if using CustomUser
     floor_plan_image = models.URLField(max_length=500, blank=True, null=True)
     address = models.TextField()
 
@@ -73,7 +74,7 @@ class ActionAuditLog(models.Model):
         return f"Log: {self.action_taken} (Incident {self.incident.id})"
 
 class EmergencyAlert(models.Model):
-    venue = models.ForeignKey(Venue, on_delete=models.CASCADE, related_name='alerts')
+    venue = models.ForeignKey(Venue, on_delete=models.CASCADE, related_name='alerts', null=True, blank=True)
     category = models.CharField(max_length=50)
     severity = models.CharField(max_length=50)
     location = models.TextField()
@@ -84,10 +85,11 @@ class EmergencyAlert(models.Model):
         return f"[{self.severity}] {self.category} at {self.location}"
 
 class StaffMember(models.Model):
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='staff_profile', null=True, blank=True)
     venue = models.ForeignKey(Venue, on_delete=models.CASCADE, related_name='staff_members')
     name = models.CharField(max_length=255)
     staff_id = models.CharField(max_length=50, unique=True)
-    password = models.CharField(max_length=128)
+    password = models.CharField(max_length=128) # Kept for legacy/simplicity as per request, but user.password is preferred
     current_lat = models.FloatField(null=True, blank=True)
     current_lng = models.FloatField(null=True, blank=True)
     is_available = models.BooleanField(default=True)
@@ -102,6 +104,7 @@ class OfficialResponder(models.Model):
         ('MEDICAL', 'Medical Unit'),
         ('FIRE', 'Fire Rescue'),
     ]
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='responder_profile', null=True, blank=True)
     name = models.CharField(max_length=255)
     official_id = models.CharField(max_length=50, unique=True)
     password = models.CharField(max_length=128)
@@ -109,3 +112,4 @@ class OfficialResponder(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.department})"
+

@@ -1,0 +1,88 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Architecture & Services | RapidResQ{% endblock %}
+
+{% block content %}
+    <main class="flex-grow flex flex-col items-center pt-40 px-6 pb-24">
+        <div class="max-w-6xl w-full text-center mb-20">
+            <span class="px-4 py-1.5 rounded-full border border-cyan-500/20 bg-cyan-500/5 text-[10px] font-bold uppercase tracking-[0.3em] text-cyan-400 mb-6 inline-block">Platform Services</span>
+            <h1 class="text-4xl md:text-6xl font-black tracking-normal mb-6 text-gradient uppercase">The 5 Core Pillars</h1>
+            <p class="text-gray-400 font-medium text-lg max-w-2xl mx-auto">
+                Discover the engineering stack powering the RapidResQ disaster management engine.
+            </p>
+        </div>
+
+        <div class="max-w-6xl w-full flex flex-col gap-12">
+            <!-- Pillar 1: AI Triage -->
+            <div class="glass-card p-10 md:p-14 rounded-[3rem] border border-[#02DEE5]/20 flex flex-col md:flex-row items-center gap-10">
+                <div class="w-24 h-24 md:w-32 md:h-32 bg-cyan-500/10 rounded-[2rem] flex items-center justify-center text-[#02DEE5] flex-shrink-0 shadow-[0_0_50px_rgba(2,222,229,0.1)]">
+                    <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                </div>
+                <div class="text-left">
+                    <h2 class="text-3xl font-black uppercase tracking-widest text-white mb-4">AI Triage</h2>
+                    <h3 class="text-[11px] font-bold uppercase tracking-[0.2em] text-[#02DEE5] mb-6">Powered by Gemini 3 Flash</h3>
+                    <p class="text-gray-400 leading-loose">
+                        Real-time neural voice analysis of emergency transcripts. Captures ambient audio data, strips out background noise, and uses NLP models to categorize threat severity (Code Red, Yellow, Green) instantly. Reduces false positives by identifying key contextual stress markers.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Pillar 2: Zero-Latency Mesh -->
+            <div class="glass-card p-10 md:p-14 rounded-[3rem] border border-blue-500/20 flex flex-col md:flex-row-reverse items-center gap-10">
+                <div class="w-24 h-24 md:w-32 md:h-32 bg-blue-500/10 rounded-[2rem] flex items-center justify-center text-blue-500 flex-shrink-0 shadow-[0_0_50px_rgba(59,130,246,0.1)]">
+                    <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                </div>
+                <div class="text-left md:text-right">
+                    <h2 class="text-3xl font-black uppercase tracking-widest text-white mb-4">Zero-Latency Mesh</h2>
+                    <h3 class="text-[11px] font-bold uppercase tracking-[0.2em] text-blue-500 mb-6">250ms Socket Latency & Haversine Routing</h3>
+                    <p class="text-gray-400 leading-loose">
+                        We abandoned standard REST polling for an ASGI WebSocket engine ("Domino"). Upon SOS trigger, the signal is broadcasted via a persistent mesh network. Haversine logic algorithmically identifies and pings the nearest official responders dynamically based on live map coordinates.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Pillar 3: Offline Protocol -->
+            <div class="glass-card p-10 md:p-14 rounded-[3rem] border border-green-500/20 flex flex-col md:flex-row items-center gap-10">
+                <div class="w-24 h-24 md:w-32 md:h-32 bg-green-500/10 rounded-[2rem] flex items-center justify-center text-green-500 flex-shrink-0 shadow-[0_0_50px_rgba(34,197,94,0.1)]">
+                    <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                </div>
+                <div class="text-left">
+                    <h2 class="text-3xl font-black uppercase tracking-widest text-white mb-4">Offline Protocol</h2>
+                    <h3 class="text-[11px] font-bold uppercase tracking-[0.2em] text-green-500 mb-6">P2P Bluetooth Beacons</h3>
+                    <p class="text-gray-400 leading-loose">
+                        Disasters destroy cellular towers. We architected a Progressive Web App (PWA) that caches structural floor plans offline. Secondary SOS signals use Bluetooth Low Energy (BLE) to hop between nearby mobile devices, bouncing the distress code until it reaches an active network node.
+                    </p>
+                </div>
+            </div>
+
+
+            <!-- Pillar 4: Smart Proximity Routing -->
+            <div class="glass-card p-10 md:p-14 rounded-[3rem] border border-[#02DEE5]/20 flex flex-col md:flex-row-reverse items-center gap-10">
+                <div class="w-24 h-24 md:w-32 md:h-32 bg-cyan-500/10 rounded-[2rem] flex items-center justify-center text-[#02DEE5] flex-shrink-0 shadow-[0_0_50px_rgba(2,222,229,0.1)]">
+                    <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                </div>
+                <div class="text-left md:text-right">
+                    <h2 class="text-3xl font-black uppercase tracking-widest text-white mb-4">Smart Proximity Routing</h2>
+                    <h3 class="text-[11px] font-bold uppercase tracking-[0.2em] text-[#02DEE5] mb-6">Sabse Paas Wala Madadgaar</h3>
+                    <p class="text-gray-400 leading-loose">
+                        Utilizing the Haversine mathematical model and real-time GPS telemetry, RapidResQ identifies the exact coordinates of the nearest active responders. Instead of a generic broadcast, the system executes a targeted dispatch, ensuring that only those within the immediate 'Golden Hour' radius are alerted, cutting down response time by up to 60%.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Pillar 5: Centralized Command Dashboard -->
+            <div class="glass-card p-10 md:p-14 rounded-[3rem] border border-[#02DEE5]/20 flex flex-col md:flex-row items-center gap-10">
+                <div class="w-24 h-24 md:w-32 md:h-32 bg-cyan-500/10 rounded-[2rem] flex items-center justify-center text-[#02DEE5] flex-shrink-0 shadow-[0_0_50px_rgba(2,222,229,0.1)]">
+                    <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                </div>
+                <div class="text-left">
+                    <h2 class="text-3xl font-black uppercase tracking-widest text-white mb-4">Centralized Command Dashboard</h2>
+                    <h3 class="text-[11px] font-bold uppercase tracking-[0.2em] text-[#02DEE5] mb-6">Sabka Saath, Ek Hi Jagah</h3>
+                    <p class="text-gray-400 leading-loose">
+                        A unified synchronization hub that bridges the communication gap between Police, Hospitals, and Fire departments. This decentralized dashboard provides a 'Single Source of Truth,' allowing multi-departmental coordination on a single incident map, ensuring that every responder is on the same page without chaotic cross-calls.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+{% endblock %}

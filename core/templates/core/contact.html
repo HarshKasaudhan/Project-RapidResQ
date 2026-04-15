@@ -1,122 +1,78 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contact Us | RapidResQ</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
-    <style>
-        body { background-color: #0b0e14 !important; font-family: 'Plus Jakarta Sans', sans-serif; }
-        .glass-panel { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); }
-        input, textarea { background: rgba(0,0,0,0.3) !important; border: 1px solid rgba(255,255,255,0.05) !important; color: white !important; }
-        input:focus, textarea:focus { border-color: #02DEE5 !important; outline: none !important; }
-        
-        #mobile-menu { transition: transform 0.3s ease-in-out; transform: translateX(100%); }
-        #mobile-menu.active { transform: translateX(0); }
-        .nav-link-mobile { font-size: 1.5rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: white; padding: 1rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); width: 100%; text-align: center; }
-    </style>
-</head>
-<body class="antialiased text-white min-h-screen flex flex-col relative overflow-x-hidden">
+{% extends 'core/base.html' %}
 
-    <!-- Navigation (Synchronized) -->
-    <nav class="fixed top-0 w-full z-50 border-b border-white/5 bg-black/40 backdrop-blur-xl">
-        <div class="max-w-7xl mx-auto px-6 lg:px-8 py-5 flex items-center justify-between">
-            <div class="flex-none">
-                <a href="{% url 'home' %}" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                    <svg class="w-8 h-8 text-[#02DEE5]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-                    <span class="logo-gradient">RapidResQ</span>
-                </a>
-            </div>
-            
-            <!-- Desktop Links -->
-            <div class="hidden md:flex flex-grow justify-center items-center gap-8 lg:gap-12">
-                <a href="{% url 'home' %}#platform" class="nav-link text-[11px]">Platform</a>
-                <a href="{% url 'home' %}#network" class="nav-link text-[11px]">Network</a>
-                <a href="{% url 'responder_login' %}" class="nav-link text-[11px]">Portals</a>
-                <a href="{% url 'features' %}" class="nav-link text-[11px]">Features</a>
-                <a href="{% url 'about' %}" class="nav-link text-[11px]">About</a>
-                <a href="{% url 'contact' %}" class="nav-link text-[11px] text-[#02DEE5]">Contact</a>
-            </div>
+{% block title %}Contact & Inquiry | RapidResQ{% endblock %}
 
-            <!-- Right side Desktop: Home Link -->
-            <div class="hidden md:flex items-center">
-                <a href="{% url 'home' %}" class="text-[10px] font-bold text-gray-500 hover:text-white uppercase tracking-widest transition-colors flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                    Home
-                </a>
-            </div>
+{% block content %}
+    <main class="flex-grow flex flex-col items-center pt-40 px-6 pb-24 relative overflow-hidden">
+        <!-- Background accents -->
+        <div class="absolute top-1/4 right-10 w-96 h-96 bg-[#02DEE5]/5 rounded-full blur-[100px] pointer-events-none"></div>
 
-            <!-- Hamburger Button -->
-            <button id="menu-open" class="md:hidden text-[#02DEE5] p-2">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
-            </button>
-        </div>
-    </nav>
-
-    <!-- Mobile Menu Overlay -->
-    <div id="mobile-menu" class="fixed inset-0 z-[100] bg-[#0b0e14] flex flex-col p-8 md:hidden">
-        <div class="flex justify-between items-center mb-16">
-            <span class="logo-gradient text-xl">RapidResQ</span>
-            <button id="menu-close" class="text-gray-400 hover:text-white"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
-        </div>
-        <div class="flex flex-col items-center gap-4">
-            <a href="{% url 'home' %}#platform" class="nav-link-mobile" onclick="toggleMenu()">Platform</a>
-            <a href="{% url 'home' %}#network" class="nav-link-mobile" onclick="toggleMenu()">Network</a>
-            <a href="{% url 'responder_login' %}" class="nav-link-mobile">Portals</a>
-            <a href="{% url 'about' %}" class="nav-link-mobile">About</a>
-            <a href="{% url 'contact' %}" class="nav-link-mobile text-[#02DEE5]">Contact</a>
-            <a href="{% url 'home' %}" class="mt-8 px-10 py-4 rounded-full border border-white/10 font-bold uppercase tracking-widest w-full text-center">Back to Home</a>
-        </div>
-    </div>
-
-    <!-- Main Content -->
-    <main class="flex-grow flex flex-col items-center justify-center pt-48 px-6 pb-20">
-        <div class="max-w-xl w-full text-center">
-            <h1 class="text-5xl font-black tracking-tighter mb-4 text-gradient">RapidResQ Connect</h1>
-            <p class="text-gray-500 font-bold uppercase tracking-widest text-[10px] mb-12">Support Infrastructure</p>
-            
-            <div class="glass-panel p-8 rounded-3xl border-[#02DEE5]/10 text-left">
-                <form class="space-y-6">
-                    <div>
-                        <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Legal Name</label>
-                        <input type="text" class="w-full px-4 py-3 rounded-xl text-sm" placeholder="John Doe">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Official Email</label>
-                        <input type="email" class="w-full px-4 py-3 rounded-xl text-sm" placeholder="contact@facility.com">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Inquiry Details</label>
-                        <textarea rows="4" class="w-full px-4 py-3 rounded-xl text-sm" placeholder="Describe your institutional requirements..."></textarea>
-                    </div>
-                    <button type="button" class="w-full bg-gradient-to-r from-[#02DEE5] to-[#1F76F3] text-black font-black py-4 rounded-xl text-xs uppercase tracking-widest shadow-xl shadow-[#02DEE5]/10 transition-transform active:scale-95">
-                        Dispatch Message
-                    </button>
-                </form>
+        <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 relative z-10">
+            <!-- Left: Contact Details -->
+            <div class="flex flex-col justify-center">
+                <span class="px-4 py-1.5 rounded-full border border-cyan-500/20 bg-cyan-500/5 text-[10px] font-bold uppercase tracking-[0.3em] text-cyan-400 mb-8 inline-block w-max">Institutional Acquisition</span>
+                <h1 class="text-4xl md:text-6xl font-black tracking-normal mb-8 uppercase text-white">Upgrade Your<br/><span class="text-gradient">Safety Infrastructure</span></h1>
                 
-                <div class="mt-10 pt-8 border-t border-white/5 text-center">
-                    <p class="text-[10px] font-bold text-gray-600 uppercase tracking-[0.3em] mb-2">Emergency Channel</p>
-                    <p class="text-[#02DEE5] font-bold">support@RapidResQ.ai</p>
+                <p class="text-gray-400 leading-loose mb-12 max-w-lg">
+                    Whether you are outfitting a high-density hotel or an entire hospital ward, our engineers will integrate the RapidResQ WebSocket mesh into your existing hardware footprint without disrupting daily operations.
+                </p>
+
+                <div class="flex flex-col gap-8">
+                    <div class="flex items-center gap-6">
+                        <div class="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10">
+                            <span class="text-xl">📧</span>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Direct Engineering Support</p>
+                            <a href="mailto:support@rapidresq.com" class="text-lg font-bold text-white hover:text-[#02DEE5] transition-colors">support@rapidresq.com</a>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-6">
+                        <div class="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10">
+                            <span class="text-xl">📍</span>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Global Headquarters</p>
+                            <p class="text-lg font-bold text-white">Google Developer Ecosystem</p>
+                        </div>
+                    </div>
                 </div>
+            </div>
+
+            <!-- Right: Form -->
+            <div class="glass-card p-10 md:p-14 rounded-[3rem] border border-white/10 relative">
+                <h2 class="text-2xl font-bold uppercase tracking-widest text-white mb-2">Request Demo</h2>
+                <p class="text-[11px] text-gray-500 uppercase tracking-widest mb-10">Hardware deployment analysis included</p>
+
+                <form class="flex flex-col gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Facility Name</label>
+                            <input type="text" placeholder="Grand Resort / Mercy Hospital" class="w-full bg-black/50 border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-[#02DEE5] focus:ring-1 focus:ring-[#02DEE5] transition-all text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Total Rooms / Beds</label>
+                            <input type="number" placeholder="500+" class="w-full bg-black/50 border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-[#02DEE5] focus:ring-1 focus:ring-[#02DEE5] transition-all text-sm">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Contact Email</label>
+                        <input type="email" placeholder="admin@domain.com" class="w-full bg-black/50 border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-[#02DEE5] focus:ring-1 focus:ring-[#02DEE5] transition-all text-sm">
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Integration Needs</label>
+                        <textarea rows="3" placeholder="Describe current security protocols and desired enhancements..." class="w-full bg-black/50 border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-[#02DEE5] focus:ring-1 focus:ring-[#02DEE5] transition-all text-sm resize-none"></textarea>
+                    </div>
+
+                    <button type="button" class="w-full py-5 rounded-xl bg-white text-black font-black uppercase tracking-[0.2em] hover:bg-[#02DEE5] transition-all shadow-xl mt-4">
+                        Initialize Contact <span class="ml-2">→</span>
+                    </button>
+                    <p class="text-[9px] text-gray-600 font-medium uppercase tracking-widest text-center mt-2">SSL Encrypted Channel</p>
+                </form>
             </div>
         </div>
     </main>
-
-    <footer class="bg-[#0b0e14] border-t border-white/5 py-10 text-center">
-        <p class="text-[10px] text-gray-600 font-bold uppercase tracking-widest">© 2026 RapidResQ Intelligence Group. All Rights Reserved.</p>
-    </footer>
-
-    <script>
-        const menuOpen = document.getElementById('menu-open');
-        const menuClose = document.getElementById('menu-close');
-        const mobileMenu = document.getElementById('mobile-menu');
-        function toggleMenu() { mobileMenu.classList.toggle('active'); document.body.style.overflow = mobileMenu.classList.contains('active') ? 'hidden' : 'auto'; }
-        menuOpen.onclick = toggleMenu; menuClose.onclick = toggleMenu;
-    </script>
-</body>
-</html>
+{% endblock %}

@@ -37,6 +37,22 @@ def get_venue_by_id(venue_id):
     except:
         return Venue.objects.first()
 
+@database_sync_to_async
+def save_incident(venue, category, lat, lng):
+    # Map category to TYPE_CHOICES
+    incident_type = 'Security'
+    cat = category.upper()
+    if 'FIRE' in cat: incident_type = 'Fire'
+    elif 'MEDICAL' in cat: incident_type = 'Medical'
+    
+    return EmergencyIncident.objects.create(
+        venue=venue,
+        type=incident_type,
+        status='Active',
+        latitude=lat,
+        longitude=lng
+    )
+
 class HelpDeskConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.incident_id = self.scope['url_route']['kwargs']['incident_id']
@@ -82,59 +98,53 @@ class HelpDeskConsumer(AsyncWebsocketConsumer):
 
 @sync_to_async
 def analyze_with_gemini(transcript):
-    try:
-        response_schema = {
-            "type": "OBJECT",
-            "properties": {
-                "category": {
-                    "type": "STRING",
-                    "enum": ["🔥 FIRE", "⚕️ MEDICAL", "🛡️ SECURITY", "🚨 GENERAL", "⚠️ FALSE ALARM"]
-                },
-                "severity": {
-                    "type": "STRING",
-                    "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW"]
-                },
-                "location_extracted": {"type": "STRING"},
-                "is_emergency": {"type": "BOOLEAN"},
-                "short_summary": {"type": "STRING"},
-                "safety_guide": {"type": "STRING"}
-            },
-            "required": ["category", "severity", "location_extracted", "is_emergency", "short_summary", "safety_guide"]
-        }
+    t = transcript.lower()
+    
+    print(f"\n[DEBUG] --- SOS CRISIS MAPPER ---")
+    print(f"[DEBUG] Transcribed Text: '{transcript}'")
 
-        prompt = f"""You are an expert multilingual emergency dispatcher. 
-        Analyze this user transcript: "{transcript}"
-        
-        CRITICAL INSTRUCTIONS:
-        - Support English, Hindi, and Hinglish.
-        - Extract the specific type of emergency.
-        - Assess severity.
-        - Generate a 1-sentence 'safety_guide' (e.g., 'Crawl low under smoke' for fire, 'Apply pressure to wound' for medical).
-        - If it is a False Alarm, set safety_guide to 'No immediate action required'."""
+    # Task 2: Master Crisis_Mapper Logic
+    case_type = "GENERAL_CASE"
+    voice_instruction = "Emergency dispatched. Help is on the way."
+    estimated_arrival = "5-7 mins"
+    category = "🚨 GENERAL"
+    should_listen = False
 
-        response = client.models.generate_content(
-            model="gemini-1.5-flash",
-            contents=prompt,
-            config={
-                "response_mime_type": "application/json",
-                "response_schema": response_schema
-            }
-        )
-        
-        ai_result = json.loads(response.text)
-        ai_result['location'] = ai_result.get('location_extracted', 'Unknown')
-        return ai_result
-        
-    except Exception as e:
-        print(f"Gemini Refinement Error: {e}")
-        return {
-            "category": "🚨 GENERAL",
-            "severity": "CRITICAL",
-            "location": "Unknown",
-            "is_emergency": True,
-            "short_summary": "Manual analysis required.",
-            "safety_guide": "Stay calm and wait for responders."
-        }
+    if any(k in t for k in ["fire", "smoke"]):
+        case_type = "FIRE_CASE"
+        category = "🔥 FIRE"
+        voice_instruction = "Fire protocol initiated. Follow the cyan route and stay low."
+        estimated_arrival = "3-5 mins"
+    elif any(k in t for k in ["pain", "accident", "blood", "breathing"]):
+        case_type = "MEDICAL_CASE"
+        category = "⚕️ MEDICAL"
+        voice_instruction = "Medical alert active. What specific help do you need?"
+        estimated_arrival = "4-6 mins"
+        should_listen = True
+    elif any(k in t for k in ["attack", "fight", "thief", "help"]):
+        case_type = "SECURITY_CASE"
+        category = "🛡️ SECURITY"
+        voice_instruction = "Police and Security are on the way. Find a safe spot."
+        estimated_arrival = "2-4 mins"
+    elif any(k in t for k in ["safe", "scared", "following"]):
+        case_type = "WOMEN_SAFETY_CASE"
+        category = "🛡️ WOMEN SAFETY"
+        voice_instruction = "RapidResQ Security is monitoring your live location. Stay in a visible area."
+        estimated_arrival = "2-3 mins"
+    
+    print(f"[DEBUG] Result: {case_type} | ETA: {estimated_arrival}")
+    
+    return {
+        "case_type": case_type,
+        "category": category,
+        "severity": "CRITICAL",
+        "location": "Unknown",
+        "is_emergency": True,
+        "safety_guide": voice_instruction,
+        "voice_message": voice_instruction,
+        "estimated_arrival": estimated_arrival,
+        "should_listen": should_listen
+    }
 
 class GlobalAlertConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -202,11 +212,27 @@ class GlobalAlertConsumer(AsyncWebsocketConsumer):
                 ai_location = ai_data.get('location', 'Unknown')
                 location = f"{frontend_location} | Room: {ai_location}" if ai_location.lower() != 'unknown' else frontend_location
                 
+                # Extract lat/lng for incident creation
+                lat, lng = 0.0, 0.0
+                try:
+                    if "Lat:" in frontend_location:
+                        parts = frontend_location.split(',')
+                        lat = float(parts[0].split(':')[1].strip())
+                        lng = float(parts[1].split(':')[1].strip())
+                except: pass
+
+                incident = await save_incident(venue_obj, ai_data['category'], lat, lng)
+
                 await self.send(text_data=json.dumps({
                     'type': 'emergency_confirmed',
                     'category': ai_data['category'],
+                    'case_type': ai_data.get('case_type', 'GENERAL_CASE'),
                     'severity': ai_data['severity'],
                     'safety_guide': ai_data['safety_guide'],
+                    'voice_message': ai_data.get('voice_message', ''),
+                    'estimated_arrival': ai_data.get('estimated_arrival', 'Calculating...'),
+                    'incident_id': incident.id,
+                    'should_listen': ai_data.get('should_listen', False),
                     'show_map': True
                 }))
 

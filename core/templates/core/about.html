@@ -1,100 +1,28 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>About Us | RapidResQ</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
-    <style>
-        body { background-color: #0b0e14 !important; font-family: 'Plus Jakarta Sans', sans-serif; }
-        .glass-panel { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); }
-        #mobile-menu { transition: transform 0.3s ease-in-out; transform: translateX(100%); }
-        #mobile-menu.active { transform: translateX(0); }
-        .nav-link-mobile { font-size: 1.5rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: white; padding: 1rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); width: 100%; text-align: center; }
-    </style>
-</head>
-<body class="antialiased text-white min-h-screen flex flex-col relative overflow-x-hidden">
+{% extends 'core/base.html' %}
 
-    <!-- Navigation (Synchronized) -->
-    <nav class="fixed top-0 w-full z-50 border-b border-white/5 bg-black/40 backdrop-blur-xl">
-        <div class="max-w-7xl mx-auto px-6 lg:px-8 py-5 flex items-center justify-between">
-            <div class="flex-none">
-                <a href="{% url 'home' %}" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                    <svg class="w-8 h-8 text-[#02DEE5]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-                    <span class="logo-gradient">RapidResQ</span>
-                </a>
-            </div>
+{% block title %}About Us | RapidResQ{% endblock %}
+
+{% block content %}
+    <main class="flex-grow flex flex-col items-center pt-48 px-6 pb-24">
+        <div class="max-w-4xl w-full text-center">
+            <span class="px-4 py-1.5 rounded-full border border-cyan-500/20 bg-cyan-500/5 text-[10px] font-bold uppercase tracking-[0.3em] text-cyan-400 mb-8 inline-block">Our Mission</span>
+            <h1 class="text-5xl md:text-7xl font-black tracking-normal mb-8 text-gradient uppercase">AI-Driven Crisis Management</h1>
+            <p class="text-xl md:text-2xl text-gray-400 font-medium leading-relaxed mb-16 italic font-['Plus Jakarta Sans'] max-w-3xl mx-auto">
+                "We believe that response time is the ultimate metric of institutional safety. RapidResQ eliminates the gap between facility management and official first responders."
+            </p>
             
-            <div class="hidden md:flex flex-grow justify-center items-center gap-8 lg:gap-12">
-                <a href="{% url 'home' %}#platform" class="nav-link text-[11px]">Platform</a>
-                <a href="{% url 'home' %}#network" class="nav-link text-[11px]">Network</a>
-                <a href="{% url 'responder_login' %}" class="nav-link text-[11px]">Portals</a>
-                <a href="{% url 'features' %}" class="nav-link text-[11px]">Features</a>
-                <a href="{% url 'about' %}" class="nav-link text-[11px] text-[#02DEE5]">About</a>
-                <a href="{% url 'contact' %}" class="nav-link text-[11px]">Contact</a>
-            </div>
-
-            <div class="hidden md:flex items-center">
-                <a href="{% url 'home' %}" class="text-[10px] font-bold text-gray-500 hover:text-white uppercase tracking-widest transition-colors flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                    Home
-                </a>
-            </div>
-
-            <button id="menu-open" class="md:hidden text-[#02DEE5] p-2">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
-            </button>
-        </div>
-    </nav>
-
-    <!-- Mobile Menu Overlay -->
-    <div id="mobile-menu" class="fixed inset-0 z-[100] bg-[#0b0e14] flex flex-col p-8 md:hidden">
-        <div class="flex justify-between items-center mb-16">
-            <span class="logo-gradient text-xl">RapidResQ</span>
-            <button id="menu-close" class="text-gray-400 hover:text-white"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
-        </div>
-        <div class="flex flex-col items-center gap-4">
-            <a href="{% url 'home' %}#platform" class="nav-link-mobile" onclick="toggleMenu()">Platform</a>
-            <a href="{% url 'home' %}#network" class="nav-link-mobile" onclick="toggleMenu()">Network</a>
-            <a href="{% url 'responder_login' %}" class="nav-link-mobile">Portals</a>
-            <a href="{% url 'features' %}" class="nav-link-mobile">Features</a>
-            <a href="{% url 'about' %}" class="nav-link-mobile text-[#02DEE5]">About</a>
-            <a href="{% url 'contact' %}" class="nav-link-mobile">Contact</a>
-            <a href="{% url 'home' %}" class="mt-8 px-10 py-4 rounded-full border border-white/10 font-bold uppercase tracking-widest w-full text-center">Back to Home</a>
-        </div>
-    </div>
-
-    <!-- Main Content -->
-    <main class="flex-grow flex flex-col items-center justify-center pt-48 px-6 pb-20">
-        <div class="max-w-3xl w-full">
-            <h1 class="text-5xl font-black tracking-tighter mb-8 text-gradient uppercase">Institutional Mission</h1>
-            <div class="glass-panel p-12 rounded-[3rem] border-[#02DEE5]/10 text-center">
-                <p class="text-2xl text-gray-300 font-medium leading-relaxed mb-12 italic">
-                    "RapidResQ is a mission to reduce critical care mortality through integrated emergency infrastructure."
+            <div class="glass-card p-12 rounded-[3rem] border-[#02DEE5]/20 text-left relative overflow-hidden">
+                <div class="absolute -top-32 -right-32 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl"></div>
+                <h2 class="text-2xl font-bold uppercase tracking-widest text-[#02DEE5] mb-6">How It Started</h2>
+                <div class="w-12 h-1 bg-[#02DEE5] mb-8"></div>
+                
+                <p class="text-gray-300 leading-loose mb-6">
+                    In high-density zones like hospitality venues, schools, and corporate parks, traditional 911 systems introduce an average of 4-7 minutes of critical dispatch latency. Internal security often operates in silos, unaware of external first responder movements.
                 </p>
-                <div class="w-20 h-[1px] bg-[#02DEE5] mx-auto mb-12 opacity-50"></div>
-                <p class="text-gray-500 text-sm leading-relaxed max-w-xl mx-auto">
-                    We believe that response time is the ultimate metric of institutional safety. By bridging the gap between facility management and official responders, we ensure that help is never more than seconds away.
+                <p class="text-gray-300 leading-loose">
+                    RapidResQ was born out of the <strong>Google Solution Challenge 2026</strong>. By engineering a low-latency socket mesh powered by modern language models, we designed a decentralized framework that provides immediate, localized alerts while simultaneously triaging data directly to the police, hospital, and fire department dashboards.
                 </p>
             </div>
         </div>
     </main>
-
-    <footer class="bg-[#0b0e14] border-t border-white/5 py-10 text-center">
-        <p class="text-[10px] text-gray-600 font-bold uppercase tracking-widest">© 2026 RapidResQ Intelligence Group. All Rights Reserved.</p>
-    </footer>
-
-    <script>
-        const menuOpen = document.getElementById('menu-open');
-        const menuClose = document.getElementById('menu-close');
-        const mobileMenu = document.getElementById('mobile-menu');
-        function toggleMenu() { mobileMenu.classList.toggle('active'); document.body.style.overflow = mobileMenu.classList.contains('active') ? 'hidden' : 'auto'; }
-        menuOpen.onclick = toggleMenu; menuClose.onclick = toggleMenu;
-    </script>
-</body>
-</html>
+{% endblock %}

@@ -1,0 +1,211 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}RapidResQ | Global Emergency Intelligence{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <style>
+        body { background-color: #0b0e14 !important; font-family: 'Plus Jakarta Sans', sans-serif; }
+        .lang-menu { display: none; }
+        .lang-menu.active { display: block; }
+        
+        #mobile-menu { transition: transform 0.3s ease-in-out; transform: translateX(100%); }
+        #mobile-menu.active { transform: translateX(0); }
+        
+        .nav-link-mobile { font-size: 1.5rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: white; padding: 1rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); width: 100%; text-align: center; }
+        
+        .section-title { font-size: 2.5rem; font-weight: 800; letter-spacing: -0.02em; text-transform: uppercase; }
+        .glass-card { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); transition: transform 0.3s, border-color 0.3s; }
+        .glass-card:hover { transform: translateY(-5px); border-color: #02DEE5; }
+        
+        .portal-btn { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); padding: 1.5rem; border-radius: 1rem; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; transition: all 0.3s; text-align: center; min-width: 240px; }
+        .portal-btn:hover { background: #02DEE5; color: black; border-color: #02DEE5; transform: scale(1.02); }
+        
+        .footer-link { color: #9ca3af; transition: color 0.3s; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+        .footer-link:hover { color: #02DEE5; }
+
+        /* Global Entry Animation */
+        @keyframes pageReveal {
+            0% { opacity: 0; transform: translateY(10px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        
+        main {
+            opacity: 0;
+            animation: pageReveal 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        /* Google Translate Overrides to maintain Minimalist Dark Theme */
+        body { top: 0 !important; }
+        .skiptranslate iframe, .goog-te-banner-frame { display: none !important; }
+        #goog-gt-tt { display: none !important; }
+        .goog-text-highlight { background-color: transparent !important; box-shadow: none !important; }
+    </style>
+    {% block extra_head %}{% endblock %}
+    <!-- Google Translate API -->
+    <script type="text/javascript">
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({pageLanguage: 'en', layout: google.translate.TranslateElement.InlineLayout.SIMPLE}, 'google_translate_element');
+        }
+    </script>
+    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+</head>
+<body class="antialiased text-white min-h-screen flex flex-col relative overflow-x-hidden">
+
+    <!-- Hidden Google Translate Element -->
+    <div id="google_translate_element" style="display:none;"></div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 border-b border-white/5 bg-black/40 backdrop-blur-xl">
+        <div class="max-w-7xl mx-auto px-6 lg:px-8 py-5 flex items-center justify-between">
+            <div class="flex-none">
+                <a href="{% url 'home' %}" class="hover:opacity-80 transition-opacity">
+                    <span class="logo-gradient">RapidResQ</span>
+                </a>
+            </div>
+            
+            <div class="hidden md:flex flex-grow justify-center items-center gap-6 lg:gap-10">
+                <a href="{% url 'about' %}" class="nav-link text-[11px]">About Us</a>
+                <a href="{% url 'services' %}" class="nav-link text-[11px]">Services</a>
+                <a href="{% url 'safety_drills' %}" class="nav-link text-[11px]">Safety Drills</a>
+                <a href="{% url 'feedback' %}" class="nav-link text-[11px]">Feedbacks</a>
+                <a href="{% url 'contact' %}" class="nav-link text-[11px]">Contact Us</a>
+            </div>
+
+
+            <div class="hidden md:flex items-center gap-4 lg:gap-6">
+                <!-- Language Switcher -->
+                <div class="relative group flex items-center cursor-pointer text-gray-400 hover:text-cyan-400 transition-colors">
+                    <svg class="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
+                    <span id="lang-label" class="text-[11px] font-bold uppercase tracking-widest hidden lg:block">EN</span>
+                    <div class="absolute right-0 top-full mt-2 w-48 bg-[#161b22] border border-white/10 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 overflow-hidden">
+                        <div class="flex flex-col text-left">
+                            <button onclick="setLanguage('en')" class="w-full text-left px-4 py-2.5 text-[11px] font-bold text-gray-300 hover:bg-[#02DEE5]/10 hover:text-cyan-400 transition-colors border-b border-white/5">English (Global)</button>
+                            <button onclick="setLanguage('hi')" class="w-full text-left px-4 py-2.5 text-[11px] font-bold text-gray-300 hover:bg-[#02DEE5]/10 hover:text-cyan-400 transition-colors border-b border-white/5">Hindi (हिंदी)</button>
+                            <button onclick="setLanguage('es')" class="w-full text-left px-4 py-2.5 text-[11px] font-bold text-gray-300 hover:bg-[#02DEE5]/10 hover:text-cyan-400 transition-colors border-b border-white/5">Spanish (Español)</button>
+                            <button onclick="setLanguage('bn')" class="w-full text-left px-4 py-2.5 text-[11px] font-bold text-gray-300 hover:bg-[#02DEE5]/10 hover:text-cyan-400 transition-colors border-b border-white/5">Bengali (বাংলা)</button>
+                            <button onclick="setLanguage('ta')" class="w-full text-left px-4 py-2.5 text-[11px] font-bold text-gray-300 hover:bg-[#02DEE5]/10 hover:text-cyan-400 transition-colors border-b border-white/5">Tamil (தமிழ்)</button>
+                            <button onclick="setLanguage('mr')" class="w-full text-left px-4 py-2.5 text-[11px] font-bold text-gray-300 hover:bg-[#02DEE5]/10 hover:text-cyan-400 transition-colors border-b border-white/5">Marathi (मराठी)</button>
+                            <button onclick="setLanguage('ar')" class="w-full text-left px-4 py-2.5 text-[11px] font-bold text-gray-300 hover:bg-[#02DEE5]/10 hover:text-cyan-400 transition-colors">Arabic (العربية)</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Login / Signup -->
+                <div class="relative group">
+                    <button class="px-5 py-2 rounded-full border border-cyan-500/30 text-[10px] font-bold hover:bg-cyan-500 hover:text-black transition-all uppercase tracking-widest cursor-pointer">
+                        Login / Signup
+                    </button>
+                    <div class="absolute right-0 top-full mt-2 w-72 bg-[#161b22] border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
+                        <div class="flex flex-col text-left">
+                            <a href="{% url 'venue_login' %}" class="block px-4 py-3 text-[11px] font-bold text-gray-300 hover:bg-white/5 hover:text-cyan-400 transition-colors border-b border-white/5">Admin</a>
+                            <a href="{% url 'staff_login' %}" class="block px-4 py-3 text-[11px] font-bold text-gray-300 hover:bg-white/5 hover:text-cyan-400 transition-colors border-b border-white/5">Staff Member</a>
+                            <a href="{% url 'responder_login' %}" class="block px-4 py-3 text-[11px] font-bold text-gray-300 hover:bg-white/5 hover:text-cyan-400 transition-colors">Official Responder (Police, Hospital, Fire)</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button id="menu-open" class="md:hidden text-[#02DEE5] p-2">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobile-menu" class="fixed inset-0 z-[100] bg-[#0b0e14] flex flex-col p-8 md:hidden">
+        <div class="flex justify-between items-center mb-16">
+            <span class="logo-gradient text-xl">RapidResQ</span>
+            <button id="menu-close" class="text-gray-400 hover:text-white"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+        </div>
+        <div class="flex flex-col items-center gap-4">
+            <a href="{% url 'about' %}" class="nav-link-mobile">About Us</a>
+            <a href="{% url 'services' %}" class="nav-link-mobile">Services</a>
+            <a href="{% url 'safety_drills' %}" class="nav-link-mobile">Safety Drills</a>
+            <a href="{% url 'feedback' %}" class="nav-link-mobile">Feedbacks</a>
+            <a href="{% url 'contact' %}" class="nav-link-mobile">Contact Us</a>
+            <a href="{% url 'venue_login' %}" class="mt-8 nav-link-mobile text-gray-500">Admin Login</a>
+            <a href="{% url 'staff_login' %}" class="mt-4 px-10 py-4 text-[12px] rounded-full bg-cyan-500 text-black font-black uppercase tracking-widest w-full text-center">Staff Access</a>
+        </div>
+    </div>
+
+    <!-- Main Content Block -->
+    {% block content %}
+    {% endblock %}
+
+    <!-- Footer -->
+    <footer class="bg-[#0b0e14] border-t border-white/5 py-16 px-8 flex flex-col items-center">
+        <div class="max-w-7xl w-full grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
+            <div class="flex flex-col items-center gap-4">
+                <a href="{% url 'home' %}"><span class="logo-gradient">RapidResQ</span></a>
+                <div class="px-4 py-1.5 rounded-full bg-blue-900/20 border border-blue-500/30 text-blue-400 font-bold tracking-wide text-[10px] uppercase">🏆 Google Solution Challenge 2026</div>
+            </div>
+            <div class="flex flex-col gap-4">
+                <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Navigation</h4>
+                <div class="flex flex-col gap-2 items-center">
+                    <a href="{% url 'about' %}" class="footer-link">About Us</a>
+                    <a href="{% url 'services' %}" class="footer-link">Services</a>
+                    <a href="{% url 'safety_drills' %}" class="footer-link">Safety Drills</a>
+                </div>
+            </div>
+            <div class="flex flex-col gap-4">
+                <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Connect</h4>
+                <div class="flex flex-col gap-2 items-center">
+                    <a href="{% url 'feedback' %}" class="footer-link">Feedbacks</a>
+                    <a href="{% url 'contact' %}" class="footer-link">Contact Us / Form</a>
+                </div>
+            </div>
+        </div>
+        <div class="max-w-7xl w-full mt-16 pt-8 border-t border-white/5 text-center">
+            <p class="text-[10px] text-gray-600 font-bold uppercase tracking-widest">© 2026 RapidResQ Intelligence Group. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        const menuOpen = document.getElementById('menu-open');
+        const menuClose = document.getElementById('menu-close');
+        const mobileMenu = document.getElementById('mobile-menu');
+        function toggleMenu() { mobileMenu.classList.toggle('active'); document.body.style.overflow = mobileMenu.classList.contains('active') ? 'hidden' : 'auto'; }
+        if(menuOpen) menuOpen.onclick = toggleMenu; 
+        if(menuClose) menuClose.onclick = toggleMenu;
+
+        function setLanguage(lang) {
+            // Update custom UI Label
+            const labelEl = document.getElementById('lang-label');
+            if (labelEl) {
+                labelEl.textContent = lang.toUpperCase();
+            }
+
+            // Set specific cookie persistence for the Google Translate engine
+            document.cookie = `googtrans=/en/${lang}; path=/`;
+            document.cookie = `googtrans=/en/${lang}; domain=${location.hostname}; path=/`;
+
+            // Trigger Hidden Google Translate Widget directly through its internal class
+            const selectCombo = document.querySelector('.goog-te-combo');
+            if (selectCombo) {
+                selectCombo.value = lang;
+                selectCombo.dispatchEvent(new Event('change'));
+            } else {
+                // Failsafe: if widget is slow to load, force page update to adopt cookie
+                window.location.reload();
+            }
+        }
+
+        window.onload = () => { 
+            // Sync custom language UI Label via the Google translate browser cookie
+            const cookieMatch = document.cookie.match(/googtrans=\/en\/([a-z]{2})/);
+            const savedLang = cookieMatch ? cookieMatch[1] : 'en';
+            
+            const labelEl = document.getElementById('lang-label');
+            if (labelEl) labelEl.textContent = savedLang.toUpperCase();
+        };
+    </script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

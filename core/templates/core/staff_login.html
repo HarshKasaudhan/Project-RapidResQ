@@ -22,7 +22,7 @@
     <div class="absolute top-8 left-0 w-full px-8 flex justify-between items-center">
         <a href="{% url 'home' %}" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
             <svg class="w-8 h-8 text-[#02DEE5]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-            <span class="logo-gradient text-xl tracking-tighter">RapidResQ</span>
+            <span class="logo-gradient text-xl tracking-normal">RapidResQ</span>
         </a>
         <a href="{% url 'home' %}" class="text-[10px] font-bold text-gray-500 hover:text-[#02DEE5] uppercase tracking-widest transition-colors flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
@@ -82,11 +82,15 @@
                     Authenticate
                 </button>
             </form>
-            {% if login_type != "Venue Admin" %}
-            <div class="mt-8 text-center">
-                <a href="{% url 'staff_signup' %}" class="text-[10px] text-gray-500 font-bold uppercase tracking-widest hover:text-[#02DEE5] transition-colors">Register Unit</a>
+            <div class="mt-8 text-center border-t border-white/5 pt-8">
+                {% if login_type == "Venue Admin" %}
+                    <a href="{% url 'venue_signup' %}" class="text-[10px] text-gray-500 font-bold uppercase tracking-widest hover:text-[#02DEE5] transition-colors">Register New Venue</a>
+                {% elif login_type == "Official Responder" %}
+                    <a href="{% url 'responder_signup' %}" class="text-[10px] text-gray-500 font-bold uppercase tracking-widest hover:text-[#02DEE5] transition-colors">Register Responder Unit</a>
+                {% else %}
+                    <a href="{% url 'staff_signup' %}" class="text-[10px] text-gray-500 font-bold uppercase tracking-widest hover:text-[#02DEE5] transition-colors">Register Staff Unit</a>
+                {% endif %}
             </div>
-            {% endif %}
         </div>
     </div>
 </body>

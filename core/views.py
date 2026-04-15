@@ -1,8 +1,12 @@
-from rest_framework import viewsets
+import uuid
+import json
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.contrib import messages
-import json
+from django.contrib.auth import login, authenticate
+from django.db import transaction
+from rest_framework import viewsets
+
 from core.models import CustomUser, Venue, EmergencyIncident, HelpDeskMessage, EmergencyAlert, StaffMember, OfficialResponder
 from core.serializers import CustomUserSerializer, VenueSerializer, EmergencyIncidentSerializer, HelpDeskMessageSerializer
 
@@ -71,6 +75,15 @@ def contact_view(request):
 def features_view(request):
     return render(request, 'core/features.html')
 
+def services_view(request):
+    return render(request, 'core/services.html')
+
+def safety_drills_view(request):
+    return render(request, 'core/safety_drills.html')
+
+def feedback_view(request):
+    return render(request, 'core/feedback.html')
+
 def response_portal(request, role):
     # RBAC: Only allow Official Responders with matching department role
     responder_id = request.session.get('responder_id')
@@ -100,14 +113,16 @@ def responder_login(request):
         official_id = request.POST.get('official_id')
         password = request.POST.get('password')
         try:
-            responder = OfficialResponder.objects.get(official_id=official_id, password=password)
-            request.session['responder_id'] = responder.id
-            return redirect('response_portal', role=responder.department.lower())
+            responder = OfficialResponder.objects.get(official_id=official_id)
+            user = authenticate(username=responder.user.username, password=password)
+            if user:
+                login(request, user)
+                request.session['responder_id'] = responder.id
+                return redirect('response_portal', role=responder.department.lower())
+            else:
+                messages.error(request, "Invalid Password")
         except OfficialResponder.DoesNotExist:
-            return render(request, 'core/staff_login.html', {
-                'error': 'Invalid Official ID or Password',
-                'login_type': 'Official Responder'
-            })
+            messages.error(request, "Invalid Official ID")
     return render(request, 'core/staff_login.html', {'login_type': 'Official Responder'})
 
 def register_responder(request):
@@ -131,21 +146,86 @@ def venue_login(request):
     if request.method == 'POST':
         venue_id_input = request.POST.get('unique_venue_id')
         password = request.POST.get('password')
-        print(f"DEBUG: Venue Admin Login Attempt - ID: {venue_id_input}")
         try:
             venue = Venue.objects.get(unique_venue_id=venue_id_input)
-            print(f"DEBUG: Venue Found: {venue.hotel_name}")
+            admin_user = CustomUser.objects.filter(facility=venue, role='Admin').first()
+            if admin_user:
+                user = authenticate(username=admin_user.username, password=password)
+                if user:
+                    login(request, user)
+                    request.session['venue_id'] = venue.id
+                    return redirect('dashboard')
+            
             if venue.check_admin_password(password):
-                print("DEBUG: Password Correct")
                 request.session['venue_id'] = venue.id
                 return redirect('dashboard')
             else:
-                print("DEBUG: Password Incorrect")
                 messages.error(request, "Invalid Password")
         except Venue.DoesNotExist:
-            print(f"DEBUG: Venue ID NOT FOUND: {venue_id_input}")
             messages.error(request, "Venue ID not found")
     return render(request, 'core/staff_login.html', {'login_type': 'Venue Admin'})
+
+def venue_signup(request):
+    if request.method == 'POST':
+        hotel_name = request.POST.get('hotel_name')
+        address = request.POST.get('address')
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        venue_id_input = request.POST.get('unique_venue_id')
+
+        if not venue_id_input:
+            venue_id_input = f"VENUE-{uuid.uuid4().hex[:6].upper()}"
+
+        try:
+            with transaction.atomic():
+                venue = Venue.objects.create(
+                    hotel_name=hotel_name,
+                    address=address,
+                    unique_venue_id=venue_id_input
+                )
+                user = CustomUser.objects.create_user(
+                    username=username,
+                    password=password,
+                    role='Admin',
+                    facility=venue
+                )
+                messages.success(request, f"Venue created successfully! Your Venue ID is: {venue_id_input}")
+                return redirect('venue_login')
+        except Exception as e:
+            messages.error(request, f"Error creating venue: {str(e)}")
+
+    return render(request, 'core/venue_signup.html')
+
+def responder_signup(request):
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        official_id = request.POST.get('official_id')
+        password = request.POST.get('password')
+        department = request.POST.get('department')
+        username = request.POST.get('username', official_id)
+
+        try:
+            with transaction.atomic():
+                user = CustomUser.objects.create_user(
+                    username=username,
+                    password=password,
+                    role='FirstResponder'
+                )
+                OfficialResponder.objects.create(
+                    user=user,
+                    name=name,
+                    official_id=official_id,
+                    password=password, # Legacy compatibility
+                    department=department
+                )
+                messages.success(request, "Responder account created. Please login.")
+                return redirect('responder_login')
+        except Exception as e:
+            messages.error(request, f"Error: {str(e)}")
+
+    return render(request, 'core/responder_signup.html', {
+        'departments': OfficialResponder.DEPT_CHOICES
+    })
 
 def staff_signup(request):
     venues = Venue.objects.all()
@@ -154,19 +234,31 @@ def staff_signup(request):
         staff_id = request.POST.get('staff_id')
         password = request.POST.get('password')
         venue_id = request.POST.get('venue_id')
-        
-        venue = get_object_or_404(Venue, id=venue_id)
-        if StaffMember.objects.filter(staff_id=staff_id).exists():
-            messages.error(request, "Staff ID already exists")
+        username = request.POST.get('username', staff_id)
+
+        if not venue_id:
+            messages.error(request, "Please select a facility.")
         else:
-            StaffMember.objects.create(
-                name=name,
-                staff_id=staff_id,
-                password=password, # Use hashing in production
-                venue=venue
-            )
-            messages.success(request, "Account created. Please login.")
-            return redirect('staff_login')
+            venue = get_object_or_404(Venue, id=venue_id)
+            try:
+                with transaction.atomic():
+                    user = CustomUser.objects.create_user(
+                        username=username,
+                        password=password,
+                        role='Staff',
+                        facility=venue
+                    )
+                    StaffMember.objects.create(
+                        user=user,
+                        name=name,
+                        staff_id=staff_id,
+                        password=password,
+                        venue=venue
+                    )
+                    messages.success(request, "Staff account created. Please login.")
+                    return redirect('staff_login')
+            except Exception as e:
+                messages.error(request, f"Error: {str(e)}")
             
     return render(request, 'core/staff_signup.html', {'venues': venues})
 
@@ -175,28 +267,21 @@ def staff_login(request):
         venue_id_input = request.POST.get('venue_id')
         staff_id = request.POST.get('staff_id')
         password = request.POST.get('staff_passcode')
-        
-        print(f"DEBUG: Attempting Staff Login - VenueID: {venue_id_input}, StaffID: {staff_id}")
-        
         try:
-            # Check if venue exists first
             venue = Venue.objects.get(unique_venue_id=venue_id_input)
-            print(f"DEBUG: Found Venue: {venue.hotel_name}")
-            
-            staff = StaffMember.objects.get(venue=venue, staff_id=staff_id, password=password)
-            print(f"DEBUG: Found Staff Member: {staff.name}")
-            
-            request.session['staff_id'] = staff.id
-            request.session['venue_id'] = venue.id
-            return redirect('staff_portal')
-        except Venue.DoesNotExist:
-            print(f"DEBUG: Venue Not Found: {venue_id_input}")
-            return render(request, 'core/staff_login.html', {'error': f'Invalid Venue ID: {venue_id_input}'})
-        except StaffMember.DoesNotExist:
-            print(f"DEBUG: Staff Member Not Found or Invalid Password for ID: {staff_id}")
-            return render(request, 'core/staff_login.html', {'error': 'Invalid Staff ID or Passcode'})
-            
-    return render(request, 'core/staff_login.html')
+            staff = StaffMember.objects.get(venue=venue, staff_id=staff_id)
+            user = authenticate(username=staff.user.username, password=password)
+            if user:
+                login(request, user)
+                request.session['staff_id'] = staff.id
+                request.session['venue_id'] = venue.id
+                return redirect('staff_portal')
+            else:
+                messages.error(request, "Invalid Password")
+        except (Venue.DoesNotExist, StaffMember.DoesNotExist):
+            messages.error(request, "Invalid Venue ID or Staff ID")
+    return render(request, 'core/staff_login.html', {'login_type': 'Staff Unit'})
+
 
 def register_venue(request):
     """
