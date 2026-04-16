@@ -1,13 +1,14 @@
 import json
 import os
 from urllib.parse import parse_qs
-from google import genai
+import google.generativeai as genai
 from asgiref.sync import sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from core.models import HelpDeskMessage, EmergencyIncident, CustomUser, EmergencyAlert, Venue
 
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 @database_sync_to_async
 def save_message(incident_id, sender_id, message):
