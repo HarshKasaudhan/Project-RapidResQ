@@ -7,6 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <!-- Heatmap Plugin -->
+    <script src="https://cdn.jsdelivr.net/npm/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -96,6 +98,70 @@
         let currentChatSocket = null;
         let currentIncidentId = null;
 
+        // --- FEATURE 2: Heatmap & Density Analytics ---
+        let crowdHeatLayer;
+        let activeIncidentMarkers = []; // Track active guest SOS markers for heat data
+
+        function initHeatmap(mapInstance) {
+            crowdHeatLayer = L.heatLayer([], {
+                radius: 35,
+                blur: 15,
+                maxZoom: 17,
+                gradient: { 0.4: 'blue', 0.6: 'lime', 0.8: 'yellow', 1: 'red' }
+            }).addTo(mapInstance);
+        }
+
+        function updateCrowdHeatmap() {
+            const points = [];
+            
+            // 1. Collect staff positions
+            Object.values(staffMarkers).forEach(m => {
+                const ll = m.getLatLng();
+                points.push([ll.lat, ll.lng, 0.5]); // Intensity 0.5
+            });
+            
+            // 2. Collect incident/guest positions (higher risk)
+            activeIncidentMarkers.forEach(m => {
+                const ll = m.getLatLng();
+                points.push([ll.lat, ll.lng, 0.9]); // Intensity 0.9
+            });
+
+            if (crowdHeatLayer) {
+                crowdHeatLayer.setLatLngs(points);
+            }
+            
+            // Run Proximity Risk Analysis
+            checkCrowdDensity(points);
+        }
+
+        function checkCrowdDensity(points) {
+            const THRESHOLD_COUNT = 5; // Cluster size
+            const RISK_RADIUS = 0.0004; // ~40m proximity threshold
+            
+            for (let i = 0; i < points.length; i++) {
+                let cluster = 0;
+                for (let j = 0; j < points.length; j++) {
+                    const dist = Math.hypot(points[i][0] - points[j][0], points[i][1] - points[j][1]);
+                    if (dist < RISK_RADIUS) cluster++;
+                }
+                
+                if (cluster >= THRESHOLD_COUNT) {
+                    showDensityWarning();
+                    break;
+                }
+            }
+        }
+
+        function showDensityWarning() {
+            if (document.getElementById('density-alert-banner')) return;
+            const banner = document.createElement('div');
+            banner.id = 'density-alert-banner';
+            banner.className = "fixed top-24 left-1/2 -translate-x-1/2 z-[3000] bg-red-600 text-white px-6 py-3 rounded-full font-black text-[10px] uppercase tracking-widest shadow-2xl animate-bounce border-2 border-white";
+            banner.innerHTML = "⚠️ CRITICAL: High Crowd Density Detected. Potential Stampede Risk. Reroute required.";
+            document.body.appendChild(banner);
+            setTimeout(() => banner.remove(), 8000);
+        }
+
         const venueId = JSON.parse(document.getElementById('venue-id').textContent);
         const staffList = JSON.parse(document.getElementById('staff-data').textContent);
 
@@ -167,6 +233,9 @@
             map = L.map('map', {zoomControl: false, attributionControl: false}).setView([30.7699, 76.5756], 15);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { className: 'map-layer', maxZoom: 20 }).addTo(map);
             
+            // Initialize Heatmap Layer
+            initHeatmap(map);
+
             const socketUrl = `${(window.location.protocol === 'https:') ? 'wss://' : 'ws://'}${window.location.host}/ws/alerts/?venue_id=${venueId}&role=ADMIN`;
             const socket = new WebSocket(socketUrl);
             
@@ -181,6 +250,24 @@
                     } else {
                         staffMarkers[s.id] = L.marker([s.lat, s.lng], {icon: createStaffIcon(s.name)}).addTo(map);
                     }
+                    updateCrowdHeatmap(); // Re-render heat layer on staff move
+                    return;
+                }
+
+                // Handle Incident Resolution from Staff Handshake
+                if (data.type === 'incident_resolved') {
+                    const countElem = document.getElementById('emergency-count');
+                    const currentCount = parseInt(countElem.textContent) || 0;
+                    if (currentCount > 0) {
+                        countElem.textContent = `${currentCount - 1} DETECTED`;
+                    }
+                    
+                    // Show resolution toast
+                    const toast = document.createElement('div');
+                    toast.className = "fixed bottom-10 left-1/2 -translate-x-1/2 bg-green-500 text-black px-6 py-3 rounded-full font-black text-[10px] uppercase tracking-widest z-[2000] shadow-2xl";
+                    toast.textContent = `Incident #${data.incident_id} Resolved via Proximity`;
+                    document.body.appendChild(toast);
+                    setTimeout(() => toast.remove(), 4000);
                     return;
                 }
 
@@ -188,12 +275,23 @@
                 if (data.type === 'emergency_confirmed' || data.alert) {
                     const isConfirmed = data.type === 'emergency_confirmed';
                     const category = isConfirmed ? data.category : data.alert.type;
-                    const locationStr = isConfirmed ? "GPS Coordinates" : data.alert.location;
+                    const locationStr = isConfirmed ? `Lat: ${data.lat}, Lng: ${data.lng}` : data.alert.location;
                     const incidentId = isConfirmed ? data.incident_id : null;
                     const severity = isConfirmed ? data.severity : "CRITICAL";
+                    
+                    // Fallback to default if coordinates are 0 or missing
+                    let lat = isConfirmed ? (data.lat || 30.7699) : 30.7699;
+                    let lng = isConfirmed ? (data.lng || 76.5756) : 76.5756;
+                    
+                    if (lat === 0 && lng === 0) {
+                        lat = 30.7699; lng = 76.5756;
+                    }
 
                     // Update Map
-                    L.marker([30.7699, 76.5756], {icon: L.divIcon({className: 'bg-red-600 w-4 h-4 rounded-full border-2 border-white animate-ping'})}).addTo(map);
+                    const marker = L.marker([lat, lng], {icon: L.divIcon({className: 'bg-red-600 w-4 h-4 rounded-full border-2 border-white animate-ping'})}).addTo(map);
+                    activeIncidentMarkers.push(marker); // Add to heatmap tracking
+                    updateCrowdHeatmap(); // Re-render heat layer
+                    map.setView([lat, lng], 16);
                     
                     // Update Incident List UI
                     const container = document.getElementById('emergencies-container');

@@ -56,6 +56,17 @@ def save_incident(venue, category, lat, lng):
         longitude=lng
     )
 
+@database_sync_to_async
+def resolve_incident_in_db(incident_id):
+    try:
+        from core.models import EmergencyIncident
+        incident = EmergencyIncident.objects.get(id=incident_id)
+        incident.status = 'Resolved'
+        incident.save()
+        return True
+    except Exception:
+        return False
+
 class HelpDeskConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.incident_id = self.scope['url_route']['kwargs']['incident_id']
@@ -75,7 +86,12 @@ class HelpDeskConsumer(AsyncWebsocketConsumer):
         )
 
     async def receive(self, text_data):
-        text_data_json = json.loads(text_data)
+        try:
+            text_data_json = json.loads(text_data)
+        except json.JSONDecodeError:
+            print("ERROR: Malformed WebSocket data received in HelpDeskConsumer.")
+            return
+
         sender_id = text_data_json.get('sender_id', 'user')
         message = text_data_json.get('message', '')
 
@@ -305,6 +321,18 @@ class GlobalAlertConsumer(AsyncWebsocketConsumer):
                 alert_type = "🚨 GENERAL"
                 severity = "CRITICAL"
                 description = transcript
+        elif data.get('type') == 'rescue_verified':
+            incident_id = data.get('incident_id')
+            if await resolve_incident_in_db(incident_id):
+                # Notify Admin Dashboard & Staff
+                await self.channel_layer.group_send(
+                    f"venue_{venue_obj.id}" if venue_obj else "global_alerts",
+                    {
+                        'type': 'incident_resolution_broadcast',
+                        'incident_id': incident_id
+                    }
+                )
+            return
         else:
             message = data.get('message', 'CRITICAL ALERT')
             location = data.get('location', 'UNKNOWN')
@@ -344,6 +372,12 @@ class GlobalAlertConsumer(AsyncWebsocketConsumer):
                 'location': event['location'],
                 'type': event.get('alert_type', 'GENERAL')
             }
+        }))
+
+    async def incident_resolution_broadcast(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'incident_resolved',
+            'incident_id': event['incident_id']
         }))
 
     async def staff_movement(self, event):

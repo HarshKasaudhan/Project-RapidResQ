@@ -57,7 +57,11 @@
             <div class="p-8">
                 <p class="text-gray-500 text-[10px] uppercase font-bold tracking-widest mb-2">Target Location</p>
                 <p class="font-mono text-xs text-white bg-white/5 py-3 rounded-lg border border-white/5 mb-8" id="dispatch-location">---</p>
-                <div class="flex gap-4"><button id="decline-btn" class="flex-1 py-4 text-xs font-bold text-gray-500 uppercase">Ignore</button><button id="accept-btn" class="flex-1 bg-[#02DEE5] text-black font-black py-4 rounded-xl text-xs uppercase tracking-widest">Acknowledge</button></div>
+                <div class="flex gap-4">
+                    <button id="decline-btn" class="flex-1 py-4 text-xs font-bold text-gray-500 uppercase">Ignore</button>
+                    <button id="accept-btn" class="flex-1 bg-[#02DEE5] text-black font-black py-4 rounded-xl text-xs uppercase tracking-widest">Acknowledge</button>
+                    <button id="verify-btn" class="hidden flex-1 bg-amber-500 text-black font-black py-4 rounded-xl text-xs uppercase tracking-widest animate-pulse">Verify Rescue</button>
+                </div>
             </div>
         </div>
     </div>
@@ -87,11 +91,70 @@
                 }, null, { enableHighAccuracy: true });
             }
 
+            // --- FEATURE 3: Closed-Loop Rescue Verification ---
+            let currentActiveIncidentId = null;
+
+            async function initiateRescueHandshake(incidentId) {
+                console.log("Starting Proximity Rescue Handshake...");
+                
+                try {
+                    // Failsafe: Check API support
+                    if (!navigator.bluetooth) throw new Error("Bluetooth Unsupported");
+                    
+                    // Request any nearby device to simulate the handshake
+                    const device = await navigator.bluetooth.requestDevice({
+                        acceptAllDevices: true
+                    });
+                    
+                    console.log(`Paired with: ${device.name}. Handshake complete.`);
+                    completeRescue(incidentId);
+                } catch (err) {
+                    console.warn("Handshake Error:", err);
+                    // Hackathon Demo Override
+                    if (confirm("Bluetooth Handshake failed or cancelled. Proceed with Manual Proximity Verification?")) {
+                        completeRescue(incidentId);
+                    }
+                }
+            }
+
+            function completeRescue(id) {
+                if (socket && socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify({
+                        type: 'rescue_verified',
+                        incident_id: id
+                    }));
+                    showToast("Rescue Confirmed & Logged.");
+                    document.getElementById('dispatch-ui').classList.replace('flex', 'hidden');
+                    document.getElementById('verify-btn').classList.add('hidden');
+                    document.getElementById('accept-btn').classList.remove('hidden');
+                }
+            }
+
+            function showToast(msg) {
+                const t = document.createElement('div');
+                t.className = "fixed bottom-10 left-1/2 -translate-x-1/2 bg-[#02DEE5] text-black px-6 py-3 rounded-full font-black text-[10px] uppercase tracking-widest z-[2000]";
+                t.textContent = msg;
+                document.body.appendChild(t);
+                setTimeout(() => t.remove(), 3000);
+            }
+
+            // Hook UI buttons
+            document.getElementById('accept-btn').onclick = () => {
+                document.getElementById('accept-btn').classList.add('hidden');
+                document.getElementById('verify-btn').classList.remove('hidden');
+                // Logic to keep the UI open for verification
+            };
+
+            document.getElementById('verify-btn').onclick = () => {
+                if (currentActiveIncidentId) initiateRescueHandshake(currentActiveIncidentId);
+            };
+
             const socketUrl = `${window.location.protocol === 'https:' ? 'wss://' : 'ws://'}${window.location.host}/ws/alerts/?venue_id=${venueId}`;
             const socket = new WebSocket(socketUrl);
             socket.onmessage = e => {
                 const data = JSON.parse(e.data);
                 if (data.alert) {
+                    currentActiveIncidentId = data.alert.incident_id || data.alert.id || null;
                     document.getElementById('dispatch-location').textContent = data.alert.location;
                     document.getElementById('dispatch-category').textContent = data.alert.type;
                     document.getElementById('dispatch-ui').classList.replace('hidden', 'flex');

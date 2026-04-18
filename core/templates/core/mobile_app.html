@@ -724,6 +724,12 @@
         function initChat(id) {
             document.getElementById('chat-widget').classList.remove('hidden');
             const protocol = location.protocol === 'https:' ? 'wss://' : 'ws://';
+            
+            // Prevent WebSocket connection leak
+            if (chatSocket) {
+                chatSocket.close();
+            }
+            
             chatSocket = new WebSocket(`${protocol}${location.host}/ws/chat/${id}/`);
             
             const msgBox = document.getElementById('chat-messages');
