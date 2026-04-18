@@ -780,23 +780,33 @@
         }
 
         function initChat(id) {
+            console.log("[CHAT] Initializing for incident:", id);
             document.getElementById('chat-widget').classList.remove('hidden');
-            const protocol = location.protocol === 'https:' ? 'wss://' : 'ws://';
             
+            const protocol = location.protocol === 'https:' ? 'wss://' : 'ws://';
+            const chatUrl = `${protocol}${location.host}/ws/chat/${id}/`;
+            console.log("[CHAT] Connecting to:", chatUrl);
+
             // Prevent WebSocket connection leak
             if (chatSocket) {
+                console.log("[CHAT] Closing existing socket...");
                 chatSocket.close();
             }
             
-            chatSocket = new WebSocket(`${protocol}${location.host}/ws/chat/${id}/`);
+            chatSocket = new WebSocket(chatUrl);
             
             const msgBox = document.getElementById('chat-messages');
             const chatInp = document.getElementById('chat-input');
             const chatSend = document.getElementById('chat-send');
             const chatMic = document.getElementById('chat-mic');
 
+            chatSocket.onopen = () => console.log("[CHAT] WebSocket Connected");
+            chatSocket.onerror = (err) => console.error("[CHAT] WebSocket Error:", err);
+            chatSocket.onclose = () => console.warn("[CHAT] WebSocket Closed");
+
             chatSocket.onmessage = (e) => {
                 const data = JSON.parse(e.data);
+                console.log("[CHAT] Message received:", data);
                 const div = document.createElement('div');
                 
                 if (data.sender_id === 'user') {
@@ -821,38 +831,65 @@
 
             const sendMessage = () => {
                 const text = chatInp.value.trim();
-                if (text && chatSocket.readyState === WebSocket.OPEN) {
-                    chatSocket.send(JSON.stringify({ message: text, sender_id: 'user' }));
+                console.log("[CHAT] Attempting to send:", text);
+                
+                if (!text) return;
+                
+                if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+                    const msg = JSON.stringify({ message: text, sender_id: 'user' });
+                    chatSocket.send(msg);
+                    console.log("[CHAT] Message sent successfully");
                     chatInp.value = '';
                     chatInp.focus();
+                } else {
+                    console.error("[CHAT] Cannot send. Socket status:", chatSocket ? chatSocket.readyState : "null");
+                    alert("Connection lost. Re-establishing...");
                 }
             };
 
-            chatSend.onclick = sendMessage;
+            chatSend.onclick = (e) => {
+                e.preventDefault();
+                sendMessage();
+            };
+
             chatInp.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
 
-            // Task 1: Web Speech API for Chat Mic
+            // Fix: Web Speech API for Chat Mic
             if (chatMic) {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 if (SpeechRecognition) {
                     const recognition = new SpeechRecognition();
-                    recognition.lang = 'en-US'; // Default, but supports Hindi if browser allows
+                    recognition.lang = 'en-US';
                     recognition.continuous = false;
                     recognition.interimResults = false;
 
                     chatMic.onclick = () => {
+                        console.log("[MIC] Activating transcription...");
                         recognition.start();
                         chatMic.classList.add('text-red-500', 'animate-pulse');
                     };
 
                     recognition.onresult = (event) => {
-                        chatInp.value = event.results[0][0].transcript;
+                        const transcript = event.results[0][0].transcript;
+                        console.log("[MIC] Text received:", transcript);
+                        
+                        // Explicitly target the input field
+                        chatInp.value = transcript;
+                        
                         chatMic.classList.remove('text-red-500', 'animate-pulse');
+                        chatInp.focus();
                         chatInp.scrollIntoView();
                     };
 
-                    recognition.onerror = () => chatMic.classList.remove('text-red-500', 'animate-pulse');
-                    recognition.onend = () => chatMic.classList.remove('text-red-500', 'animate-pulse');
+                    recognition.onerror = (err) => {
+                        console.error("[MIC] Error:", err.error);
+                        chatMic.classList.remove('text-red-500', 'animate-pulse');
+                    };
+                    
+                    recognition.onend = () => {
+                        console.log("[MIC] Deactivated");
+                        chatMic.classList.remove('text-red-500', 'animate-pulse');
+                    };
                 }
             }
 
@@ -865,7 +902,12 @@
             };
         }
 
-        window.sendQuickMessage = (text) => { if (chatSocket) chatSocket.send(JSON.stringify({ message: text, sender_id: 'user' })); };
+        window.sendQuickMessage = (text) => { 
+            console.log("[CHAT] Quick message:", text);
+            if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+                chatSocket.send(JSON.stringify({ message: text, sender_id: 'user' }));
+            }
+        };
 
         // --- Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
@@ -884,14 +926,6 @@
                 currentLng = pos.coords.longitude;
                 document.getElementById('gps-status-indicator').className = 'w-1.5 h-1.5 rounded-full bg-green-500';
             });
-
-            document.getElementById('chat-send').onclick = () => {
-                const inp = document.getElementById('chat-input');
-                if (inp.value && chatSocket) {
-                    chatSocket.send(JSON.stringify({ message: inp.value, sender_id: 'user' }));
-                    inp.value = '';
-                }
-            };
 
             document.getElementById('chat-bubble').onclick = () => document.getElementById('chat-window').classList.toggle('hidden');
             document.getElementById('close-chat').onclick = () => document.getElementById('chat-window').classList.add('hidden');

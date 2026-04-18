@@ -172,7 +172,11 @@
         }
 
         function joinChat(incidentId, type) {
-            if (currentChatSocket) currentChatSocket.close();
+            console.log("[COMMAND] Joining chat for incident:", incidentId);
+            if (currentChatSocket) {
+                console.log("[COMMAND] Closing existing chat socket...");
+                currentChatSocket.close();
+            }
             
             currentIncidentId = incidentId;
             document.getElementById('chat-incident-info').textContent = `Incident #${incidentId} (${type})`;
@@ -180,10 +184,17 @@
             document.getElementById('dashboard-chat-panel').classList.remove('hidden');
 
             const protocol = location.protocol === 'https:' ? 'wss://' : 'ws://';
-            currentChatSocket = new WebSocket(`${protocol}${location.host}/ws/chat/${incidentId}/`);
+            const url = `${protocol}${location.host}/ws/chat/${incidentId}/`;
+            console.log("[COMMAND] Connecting to:", url);
+            
+            currentChatSocket = new WebSocket(url);
+            
+            currentChatSocket.onopen = () => console.log("[COMMAND] Chat WebSocket Connected");
+            currentChatSocket.onerror = (err) => console.error("[COMMAND] Chat WebSocket Error:", err);
             
             currentChatSocket.onmessage = (e) => {
                 const data = JSON.parse(e.data);
+                console.log("[COMMAND] Message received:", data);
                 appendDashboardMessage(data.message, data.sender_id === 'user' ? 'user' : 'command');
             };
         }
@@ -203,13 +214,66 @@
         function sendDashboardMessage() {
             const input = document.getElementById('dashboard-chat-input');
             const text = input.value.trim();
-            if (text && currentChatSocket) {
+            console.log("[COMMAND] Attempting to send message:", text);
+            
+            if (text && currentChatSocket && currentChatSocket.readyState === WebSocket.OPEN) {
                 currentChatSocket.send(JSON.stringify({ 'message': text, 'sender_id': 'command' }));
+                console.log("[COMMAND] Message sent successfully");
                 input.value = '';
+                input.focus();
+            } else {
+                console.error("[COMMAND] Cannot send. Socket status:", currentChatSocket ? currentChatSocket.readyState : "null");
             }
         }
 
         document.getElementById('dashboard-chat-input').onkeypress = (e) => { if(e.key === 'Enter') sendDashboardMessage(); };
+
+        // Fix: Dispatch Intelligence (Voice Command) logic
+        document.addEventListener('DOMContentLoaded', () => {
+            const aiVoiceBtn = document.getElementById('ai-voice-btn');
+            const aiTranscript = document.getElementById('ai-transcript');
+            
+            if (aiVoiceBtn) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (SpeechRecognition) {
+                    const recognition = new SpeechRecognition();
+                    recognition.lang = 'en-US';
+                    recognition.interimResults = true;
+
+                    aiVoiceBtn.onclick = () => {
+                        console.log("[DISPATCH] Voice recognition started...");
+                        recognition.start();
+                        aiVoiceBtn.classList.add('animate-pulse', 'border-red-500');
+                        aiTranscript.textContent = "Listening for dispatch command...";
+                    };
+
+                    recognition.onresult = (event) => {
+                        const transcript = event.results[0][0].transcript;
+                        console.log("[DISPATCH] Voice text:", transcript);
+                        aiTranscript.textContent = transcript;
+                        
+                        if (event.results[0].isFinal) {
+                            console.log("[DISPATCH] Final command recognized:", transcript);
+                            aiVoiceBtn.classList.remove('animate-pulse', 'border-red-500');
+                            // Trigger AI analysis if needed
+                        }
+                    };
+
+                    recognition.onerror = (err) => {
+                        console.error("[DISPATCH] recognition error:", err.error);
+                        aiVoiceBtn.classList.remove('animate-pulse', 'border-red-500');
+                        aiTranscript.textContent = "Error: " + err.error;
+                    };
+                    
+                    recognition.onend = () => {
+                        aiVoiceBtn.classList.remove('animate-pulse', 'border-red-500');
+                    };
+                } else {
+                    aiVoiceBtn.textContent = "Voice Not Supported";
+                    aiVoiceBtn.disabled = true;
+                }
+            }
+        });
 
         // --- End Chat Logic ---
         

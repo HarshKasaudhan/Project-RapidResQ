@@ -7,8 +7,8 @@ from django.contrib.auth import login, authenticate
 from django.db import transaction, connection
 from rest_framework import viewsets
 
-from core.models import CustomUser, Venue, EmergencyIncident, HelpDeskMessage, EmergencyAlert, StaffMember, OfficialResponder
-from core.serializers import CustomUserSerializer, VenueSerializer, EmergencyIncidentSerializer, HelpDeskMessageSerializer
+from core.models import CustomUser, Venue, EmergencyIncident, HelpDeskMessage, EmergencyAlert, StaffMember, OfficialResponder, Feedback
+from core.serializers import CustomUserSerializer, VenueSerializer, EmergencyIncidentSerializer, HelpDeskMessageSerializer, FeedbackSerializer
 
 class CustomUserViewSet(viewsets.ModelViewSet):
     queryset = CustomUser.objects.all()
@@ -25,6 +25,10 @@ class EmergencyIncidentViewSet(viewsets.ModelViewSet):
 class HelpDeskMessageViewSet(viewsets.ModelViewSet):
     queryset = HelpDeskMessage.objects.all()
     serializer_class = HelpDeskMessageSerializer
+
+class FeedbackViewSet(viewsets.ModelViewSet):
+    queryset = Feedback.objects.all()
+    serializer_class = FeedbackSerializer
 
 def offline_safety_guide(request):
     return render(request, 'core/safety_guide.html')

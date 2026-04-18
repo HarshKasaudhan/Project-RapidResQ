@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from core.models import CustomUser, Venue, EmergencyIncident, HelpDeskMessage
+from core.models import CustomUser, Venue, EmergencyIncident, HelpDeskMessage, Feedback
 
 class CustomUserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -19,4 +19,9 @@ class EmergencyIncidentSerializer(serializers.ModelSerializer):
 class HelpDeskMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = HelpDeskMessage
+        fields = '__all__'
+
+class FeedbackSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Feedback
         fields = '__all__'

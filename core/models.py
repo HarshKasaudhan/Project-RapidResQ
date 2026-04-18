@@ -113,3 +113,12 @@ class OfficialResponder(models.Model):
     def __str__(self):
         return f"{self.name} ({self.department})"
 
+class Feedback(models.Model):
+    dispatch_reference_id = models.CharField(max_length=100)
+    triage_accuracy = models.IntegerField(default=0)
+    detailed_report = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Feedback for {self.dispatch_reference_id}"
+

@@ -13,11 +13,12 @@
         </div>
 
         <div class="max-w-2xl w-full glass-card p-10 md:p-16 rounded-[3rem] border border-white/5">
-            <form action="#" method="POST" class="flex flex-col gap-8">
+            <form id="feedback-form" action="#" method="POST" class="flex flex-col gap-8">
+                {% csrf_token %}
                 <!-- Dispatch ID -->
                 <div>
                     <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Dispatch Reference ID</label>
-                    <input type="text" placeholder="e.g. SOS-9482A" class="w-full bg-black/50 border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-[#02DEE5] focus:ring-1 focus:ring-[#02DEE5] transition-all font-mono text-sm">
+                    <input type="text" id="dispatch_id" placeholder="e.g. SOS-9482A" class="w-full bg-black/50 border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-[#02DEE5] focus:ring-1 focus:ring-[#02DEE5] transition-all font-mono text-sm">
                 </div>
 
                 <!-- Star Rating -->
@@ -46,10 +47,10 @@
                 <!-- Text Area -->
                 <div>
                     <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-2">Detailed Report</label>
-                    <textarea rows="4" placeholder="Briefly describe the accuracy of the AI transcript, latency delays, or routing errors..." class="w-full bg-black/50 border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-[#02DEE5] focus:ring-1 focus:ring-[#02DEE5] transition-all text-sm resize-none"></textarea>
+                    <textarea id="detailed_report" rows="4" placeholder="Briefly describe the accuracy of the AI transcript, latency delays, or routing errors..." class="w-full bg-black/50 border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-[#02DEE5] focus:ring-1 focus:ring-[#02DEE5] transition-all text-sm resize-none"></textarea>
                 </div>
 
-                <button type="button" class="w-full py-5 rounded-full bg-[#02DEE5] text-black font-black uppercase tracking-[0.2em] hover:bg-cyan-400 transition-all shadow-[0_0_20px_rgba(2,222,229,0.3)] mt-4">
+                <button type="button" id="submit-btn" onclick="submitTelemetry()" class="w-full py-5 rounded-full bg-[#02DEE5] text-black font-black uppercase tracking-[0.2em] hover:bg-cyan-400 transition-all shadow-[0_0_20px_rgba(2,222,229,0.3)] mt-4">
                     Submit Telemetry
                 </button>
             </form>
@@ -138,12 +139,13 @@
 
 {% block extra_scripts %}
 <script>
+    let currentRating = 0;
     const stars = document.querySelectorAll('.star');
     stars.forEach(star => {
         star.addEventListener('click', (e) => {
-            const value = parseInt(star.getAttribute('data-value'));
+            currentRating = parseInt(star.getAttribute('data-value'));
             stars.forEach((s, index) => {
-                if (index < value) {
+                if (index < currentRating) {
                     s.classList.remove('text-gray-600');
                     s.classList.add('text-yellow-500');
                 } else {
@@ -153,5 +155,60 @@
             });
         });
     });
+
+    async function submitTelemetry() {
+        const dispatchId = document.getElementById('dispatch_id').value;
+        const detailedReport = document.getElementById('detailed_report').value;
+        const submitBtn = document.getElementById('submit-btn');
+
+        if (!dispatchId || currentRating === 0 || !detailedReport) {
+            alert('Please fill all fields and provide a rating.');
+            return;
+        }
+
+        const data = {
+            dispatch_reference_id: dispatchId,
+            triage_accuracy: currentRating,
+            detailed_report: detailedReport
+        };
+
+        try {
+            const response = await fetch('/feedback-api/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                submitBtn.textContent = 'SUBMITTED SUCCESSFULLY!';
+                submitBtn.classList.remove('bg-[#02DEE5]', 'hover:bg-cyan-400');
+                submitBtn.classList.add('bg-green-500');
+                submitBtn.disabled = true;
+
+                // Reset form after 3 seconds
+                setTimeout(() => {
+                    document.getElementById('feedback-form').reset();
+                    currentRating = 0;
+                    stars.forEach(s => {
+                        s.classList.remove('text-yellow-500');
+                        s.classList.add('text-gray-600');
+                    });
+                    submitBtn.textContent = 'Submit Telemetry';
+                    submitBtn.classList.remove('bg-green-500');
+                    submitBtn.classList.add('bg-[#02DEE5]', 'hover:bg-cyan-400');
+                    submitBtn.disabled = false;
+                }, 3000);
+            } else {
+                const err = await response.json();
+                alert('Error submitting feedback: ' + JSON.stringify(err));
+            }
+        } catch (error) {
+            console.error('Submission error:', error);
+            alert('An error occurred. Please check the console.');
+        }
+    }
 </script>
 {% endblock %}
