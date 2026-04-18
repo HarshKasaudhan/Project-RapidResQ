@@ -45,6 +45,8 @@ def save_incident(venue, category, lat, lng):
     cat = category.upper()
     if 'FIRE' in cat: incident_type = 'Fire'
     elif 'MEDICAL' in cat: incident_type = 'Medical'
+    elif 'DISASTER' in cat: incident_type = 'NaturalDisaster'
+    # 'Security' covers both general security and women safety in our models
     
     return EmergencyIncident.objects.create(
         venue=venue,
@@ -99,54 +101,83 @@ class HelpDeskConsumer(AsyncWebsocketConsumer):
 
 @sync_to_async
 def analyze_with_gemini(transcript):
-    t = transcript.lower()
-    
-    print(f"\n[DEBUG] --- SOS CRISIS MAPPER ---")
+    print(f"\n[DEBUG] --- SOS CRISIS MAPPER (Gemini AI) ---")
     print(f"[DEBUG] Transcribed Text: '{transcript}'")
 
-    # Task 2: Master Crisis_Mapper Logic
-    case_type = "GENERAL_CASE"
-    voice_instruction = "Emergency dispatched. Help is on the way."
-    estimated_arrival = "5-7 mins"
-    category = "🚨 GENERAL"
-    should_listen = False
+    prompt = f"""
+    You are an elite Emergency Dispatch AI. Your job is to analyze raw, panicked user input (often in Hindi, Hinglish, or English) and strictly categorize it into predefined emergency cases.
+    
+    Transcript: "{transcript}"
 
-    if any(k in t for k in ["fire", "smoke"]):
-        case_type = "FIRE_CASE"
-        category = "🔥 FIRE"
-        voice_instruction = "Fire protocol initiated. Follow the cyan route and stay low."
-        estimated_arrival = "3-5 mins"
-    elif any(k in t for k in ["pain", "accident", "blood", "breathing"]):
-        case_type = "MEDICAL_CASE"
-        category = "⚕️ MEDICAL"
-        voice_instruction = "Medical alert active. What specific help do you need?"
-        estimated_arrival = "4-6 mins"
-        should_listen = True
-    elif any(k in t for k in ["attack", "fight", "thief", "help"]):
-        case_type = "SECURITY_CASE"
-        category = "🛡️ SECURITY"
-        voice_instruction = "Police and Security are on the way. Find a safe spot."
-        estimated_arrival = "2-4 mins"
-    elif any(k in t for k in ["safe", "scared", "following"]):
-        case_type = "WOMEN_SAFETY_CASE"
-        category = "🛡️ WOMEN SAFETY"
-        voice_instruction = "RapidResQ Security is monitoring your live location. Stay in a visible area."
-        estimated_arrival = "2-3 mins"
+    PREDEFINED CASES & CATEGORIES (Choose EXACTLY ONE mapping):
+    1. "MEDICAL_CASE" -> category: "⚕️ MEDICAL" (Heart attack, injury, breathing issues, chot lagna, khoon)
+    2. "FIRE_CASE" -> category: "🔥 FIRE" (Smoke, short circuit, fire, aag, dhua)
+    3. "SECURITY_CASE" -> category: "🛡️ SECURITY" (Fight, theft, gunshots, ladai, chori)
+    4. "WOMEN_SAFETY_CASE" -> category: "🛡️ WOMEN SAFETY" (Harassment, stalking, feeling unsafe)
+    5. "GENERAL_CASE" -> category: "🚨 GENERAL" (Earthquake, lift trapped, unclassified panic, bhukamp)
+
+    INSTRUCTIONS:
+    1. Analyze the transcript and assign the exact case_type and matching category.
+    2. Assess severity: "LOW", "MEDIUM", "HIGH", or "CRITICAL".
+    3. Extract location if mentioned in the transcript, otherwise return "Unknown".
+    4. safety_guide: Provide 1-2 actionable, life-saving steps in easy HINGLISH for the victim's screen.
+    5. voice_message: Provide a short, calm English summary for voice synthesis.
     
-    print(f"[DEBUG] Result: {case_type} | ETA: {estimated_arrival}")
-    
-    return {
-        "case_type": case_type,
-        "category": category,
+    CRITICAL: You MUST return ONLY a valid JSON object matching the exact schema below. Do NOT wrap it in ```json tags. Do NOT add any extra text.
+
+    {{
+        "case_type": "MEDICAL_CASE",
+        "category": "⚕️ MEDICAL",
         "severity": "CRITICAL",
-        "location": "Unknown",
-        "is_emergency": True,
-        "safety_guide": voice_instruction,
-        "voice_message": voice_instruction,
-        "estimated_arrival": estimated_arrival,
-        "should_listen": should_listen
-    }
+        "location": "Room 302",
+        "is_emergency": true,
+        "safety_guide": "Khoon behne wali jagah par ek saaf kapda zor se dabakar rakhein. Hilne ki koshish na karein.",
+        "voice_message": "Medical team dispatched. Please stay calm.",
+        "estimated_arrival": "3-5 mins",
+        "should_listen": true
+    }}
+    """
 
+    try:
+        response = model.generate_content(
+            prompt,
+            generation_config={"response_mime_type": "application/json"}
+        )
+        ai_data = json.loads(response.text)
+        print(f"[DEBUG] Gemini Result: {ai_data.get('case_type')} | ETA: {ai_data.get('estimated_arrival')}")
+        return ai_data
+    except Exception as e:
+        print(f"[ERROR] Gemini AI Triage failed: {e}")
+        # Fallback to Basic Mock Logic if API fails
+        t = transcript.lower()
+        case_type = "GENERAL_CASE"
+        category = "🚨 GENERAL"
+        instruction = "Emergency dispatched. Help is on the way."
+        
+        if any(k in t for k in ["fire", "smoke", "aag", "dhua"]):
+            case_type = "FIRE_CASE"
+            category = "🔥 FIRE"
+            instruction = "Fire protocol initiated. Follow the cyan route and stay low."
+        elif any(k in t for k in ["pain", "accident", "blood", "breathing", "chot", "khoon", "heart"]):
+            case_type = "MEDICAL_CASE"
+            category = "⚕️ MEDICAL"
+            instruction = "Medical alert active. What specific help do you need?"
+        elif any(k in t for k in ["attack", "fight", "thief", "help", "chori", "ladai"]):
+            case_type = "SECURITY_CASE"
+            category = "🛡️ SECURITY"
+            instruction = "Police and Security are on the way. Find a safe spot."
+
+        return {
+            "case_type": case_type,
+            "category": category,
+            "severity": "CRITICAL",
+            "location": "Unknown",
+            "is_emergency": True,
+            "safety_guide": instruction,
+            "voice_message": instruction,
+            "estimated_arrival": "5-7 mins",
+            "should_listen": case_type == "MEDICAL_CASE"
+        }
 class GlobalAlertConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         query_string = self.scope.get('query_string', b'').decode('utf-8')
@@ -233,6 +264,8 @@ class GlobalAlertConsumer(AsyncWebsocketConsumer):
                     'voice_message': ai_data.get('voice_message', ''),
                     'estimated_arrival': ai_data.get('estimated_arrival', 'Calculating...'),
                     'incident_id': incident.id,
+                    'lat': lat,
+                    'lng': lng,
                     'should_listen': ai_data.get('should_listen', False),
                     'show_map': True
                 }))
