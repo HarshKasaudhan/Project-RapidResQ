@@ -19,6 +19,4 @@ urlpatterns = [
     path('guide/', offline_safety_guide, name='offline_safety_guide'),
     path('dashboard/', command_dashboard, name='dashboard'),
     path('app/', guest_app, name='guest_app'),
-    path('sw.js', TemplateView.as_view(template_name='sw.js', content_type='application/javascript'), name='sw.js'),
-    
 ]

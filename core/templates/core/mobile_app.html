@@ -862,10 +862,21 @@
                     recognition.lang = 'en-US';
                     recognition.continuous = false;
                     recognition.interimResults = false;
+                    
+                    let isListening = false; // State flag
 
                     chatMic.onclick = () => {
-                        console.log("[MIC] Activating transcription...");
-                        recognition.start();
+                        if (isListening) {
+                            console.log("[MIC] Stopping...");
+                            recognition.stop();
+                        } else {
+                            console.log("[MIC] Activating transcription...");
+                            recognition.start();
+                        }
+                    };
+
+                    recognition.onstart = () => {
+                        isListening = true;
                         chatMic.classList.add('text-red-500', 'animate-pulse');
                     };
 
@@ -876,18 +887,19 @@
                         // Explicitly target the input field
                         chatInp.value = transcript;
                         
-                        chatMic.classList.remove('text-red-500', 'animate-pulse');
                         chatInp.focus();
                         chatInp.scrollIntoView();
                     };
 
                     recognition.onerror = (err) => {
                         console.error("[MIC] Error:", err.error);
+                        isListening = false;
                         chatMic.classList.remove('text-red-500', 'animate-pulse');
                     };
                     
                     recognition.onend = () => {
                         console.log("[MIC] Deactivated");
+                        isListening = false;
                         chatMic.classList.remove('text-red-500', 'animate-pulse');
                     };
                 }

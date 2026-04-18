@@ -87,47 +87,54 @@ class HelpDeskConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         try:
-            text_data_json = json.loads(text_data)
-        except json.JSONDecodeError:
-            print("ERROR: Malformed WebSocket data received in HelpDeskConsumer.")
-            return
+            try:
+                text_data_json = json.loads(text_data)
+            except json.JSONDecodeError:
+                print("ERROR: Malformed WebSocket data received in HelpDeskConsumer.")
+                return
 
-        sender_id = text_data_json.get('sender_id', 'user')
-        message = text_data_json.get('message', '')
+            sender_id = text_data_json.get('sender_id', 'user')
+            message = text_data_json.get('message', '')
 
-        if not message: return
+            if not message: return
 
-        # Save user message
-        await save_message(self.incident_id, sender_id, message)
+            # Save user message
+            await save_message(self.incident_id, sender_id, message)
 
-        # Broadcast user message to group
-        await self.channel_layer.group_send(
-            self.group_name,
-            {
-                'type': 'chat_message',
-                'message': message,
-                'sender_id': sender_id
-            }
-        )
-
-        # If user sends message, trigger Gemini for real-time guidance
-        if sender_id == 'user':
-            ai_data = await analyze_with_gemini(message)
-            ai_msg = ai_data.get('safety_guide', 'Emergency responders are on the way.')
-            
-            # Save AI response
-            await save_message(self.incident_id, 'ai_assistant', ai_msg)
-            
-            # Broadcast AI message
+            # Broadcast user message to group
             await self.channel_layer.group_send(
                 self.group_name,
                 {
                     'type': 'chat_message',
-                    'message': ai_msg,
-                    'sender_id': 'ai_assistant',
-                    'is_ai': True
+                    'message': message,
+                    'sender_id': sender_id
                 }
             )
+
+            # If user sends message, trigger Gemini for real-time guidance
+            if sender_id == 'user':
+                ai_data = await analyze_with_gemini(message)
+                ai_msg = ai_data.get('safety_guide', 'Emergency responders are on the way.')
+                
+                # Save AI response
+                await save_message(self.incident_id, 'ai_assistant', ai_msg)
+                
+                # Broadcast AI message
+                await self.channel_layer.group_send(
+                    self.group_name,
+                    {
+                        'type': 'chat_message',
+                        'message': ai_msg,
+                        'sender_id': 'ai_assistant',
+                        'is_ai': True
+                    }
+                )
+        except Exception as e:
+            print(f"WS Error (HelpDesk): {e}")
+            await self.send(text_data=json.dumps({
+                'error': str(e),
+                'message': 'System busy, using standard protocols.'
+            }))
 
     async def chat_message(self, event):
         message = event['message']
@@ -244,126 +251,133 @@ class GlobalAlertConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         try:
-            data = json.loads(text_data)
-        except json.JSONDecodeError:
-            print("ERROR: Malformed WebSocket data received.")
-            return
-
-        # Handle Staff Movement Updates
-        if data.get('type') == 'staff_location':
             try:
-                await self.channel_layer.group_send(
-                    f"venue_{data['venue_id']}",
-                    {
-                        'type': 'staff_movement',
-                        'staff_id': data['staff_id'],
-                        'lat': data['lat'],
-                        'lng': data['lng'],
-                        'name': data['name']
-                    }
-                )
-            except KeyError as e:
-                print(f"ERROR: Missing staff telemetry key: {e}")
-            return
+                data = json.loads(text_data)
+            except json.JSONDecodeError:
+                print("ERROR: Malformed WebSocket data received.")
+                return
 
-        # Handle SOS Alerts
-        try:
-            query_string = self.scope.get('query_string', b'').decode('utf-8')
-            params = parse_qs(query_string)
-            venue_id_context = params.get('venue_id', [''])[0]
-            venue_obj = await get_venue_by_id(venue_id_context)
-        except Exception as e:
-            print(f"ERROR: Failed to resolve venue context: {e}")
-            venue_obj = None
-
-        if data.get('type') == 'raw_voice_transcript':
-            transcript = data.get('transcript', 'No transcript provided.')
-            frontend_location = data.get('location', 'Unknown')
-            try:
-                ai_data = await analyze_with_gemini(transcript)
-                message = f"[{ai_data['severity']}] {ai_data['category']}"
-                ai_location = ai_data.get('location', 'Unknown')
-                location = f"{frontend_location} | Room: {ai_location}" if ai_location.lower() != 'unknown' else frontend_location
-                
-                # Extract lat/lng for incident creation
-                lat, lng = 0.0, 0.0
+            # Handle Staff Movement Updates
+            if data.get('type') == 'staff_location':
                 try:
-                    if "Lat:" in frontend_location:
-                        parts = frontend_location.split(',')
-                        lat = float(parts[0].split(':')[1].strip())
-                        lng = float(parts[1].split(':')[1].strip())
-                except: pass
+                    await self.channel_layer.group_send(
+                        f"venue_{data['venue_id']}",
+                        {
+                            'type': 'staff_movement',
+                            'staff_id': data['staff_id'],
+                            'lat': data['lat'],
+                            'lng': data['lng'],
+                            'name': data['name']
+                        }
+                    )
+                except KeyError as e:
+                    print(f"ERROR: Missing staff telemetry key: {e}")
+                return
 
-                incident = await save_incident(venue_obj, ai_data['category'], lat, lng)
-
-                await self.send(text_data=json.dumps({
-                    'type': 'emergency_confirmed',
-                    'category': ai_data['category'],
-                    'case_type': ai_data.get('case_type', 'GENERAL_CASE'),
-                    'severity': ai_data['severity'],
-                    'safety_guide': ai_data['safety_guide'],
-                    'voice_message': ai_data.get('voice_message', ''),
-                    'estimated_arrival': ai_data.get('estimated_arrival', 'Calculating...'),
-                    'incident_id': incident.id,
-                    'lat': lat,
-                    'lng': lng,
-                    'should_listen': ai_data.get('should_listen', False),
-                    'show_map': True
-                }))
-
-                alert_type = ai_data['category']
-                severity = ai_data['severity']
-                description = transcript
+            # Handle SOS Alerts
+            try:
+                query_string = self.scope.get('query_string', b'').decode('utf-8')
+                params = parse_qs(query_string)
+                venue_id_context = params.get('venue_id', [''])[0]
+                venue_obj = await get_venue_by_id(venue_id_context)
             except Exception as e:
-                print(f"ERROR: Gemini AI Triage failed: {e}")
-                message = "[CRITICAL] 🚨 GENERAL EMERGENCY"
-                location = frontend_location
-                alert_type = "🚨 GENERAL"
+                print(f"ERROR: Failed to resolve venue context: {e}")
+                venue_obj = None
+
+            if data.get('type') == 'raw_voice_transcript':
+                transcript = data.get('transcript', 'No transcript provided.')
+                frontend_location = data.get('location', 'Unknown')
+                try:
+                    ai_data = await analyze_with_gemini(transcript)
+                    message = f"[{ai_data['severity']}] {ai_data['category']}"
+                    ai_location = ai_data.get('location', 'Unknown')
+                    location = f"{frontend_location} | Room: {ai_location}" if ai_location.lower() != 'unknown' else frontend_location
+                    
+                    # Extract lat/lng for incident creation
+                    lat, lng = 0.0, 0.0
+                    try:
+                        if "Lat:" in frontend_location:
+                            parts = frontend_location.split(',')
+                            lat = float(parts[0].split(':')[1].strip())
+                            lng = float(parts[1].split(':')[1].strip())
+                    except: pass
+
+                    incident = await save_incident(venue_obj, ai_data['category'], lat, lng)
+
+                    await self.send(text_data=json.dumps({
+                        'type': 'emergency_confirmed',
+                        'category': ai_data['category'],
+                        'case_type': ai_data.get('case_type', 'GENERAL_CASE'),
+                        'severity': ai_data['severity'],
+                        'safety_guide': ai_data['safety_guide'],
+                        'voice_message': ai_data.get('voice_message', ''),
+                        'estimated_arrival': ai_data.get('estimated_arrival', 'Calculating...'),
+                        'incident_id': incident.id,
+                        'lat': lat,
+                        'lng': lng,
+                        'should_listen': ai_data.get('should_listen', False),
+                        'show_map': True
+                    }))
+
+                    alert_type = ai_data['category']
+                    severity = ai_data['severity']
+                    description = transcript
+                except Exception as e:
+                    print(f"ERROR: Gemini AI Triage failed: {e}")
+                    message = "[CRITICAL] 🚨 GENERAL EMERGENCY"
+                    location = frontend_location
+                    alert_type = "🚨 GENERAL"
+                    severity = "CRITICAL"
+                    description = transcript
+            elif data.get('type') == 'rescue_verified':
+                incident_id = data.get('incident_id')
+                if await resolve_incident_in_db(incident_id):
+                    # Notify Admin Dashboard & Staff
+                    await self.channel_layer.group_send(
+                        f"venue_{venue_obj.id}" if venue_obj else "global_alerts",
+                        {
+                            'type': 'incident_resolution_broadcast',
+                            'incident_id': incident_id
+                        }
+                    )
+                return
+            else:
+                message = data.get('message', 'CRITICAL ALERT')
+                location = data.get('location', 'UNKNOWN')
+                alert_type = data.get('type', 'GENERAL')
                 severity = "CRITICAL"
-                description = transcript
-        elif data.get('type') == 'rescue_verified':
-            incident_id = data.get('incident_id')
-            if await resolve_incident_in_db(incident_id):
-                # Notify Admin Dashboard & Staff
-                await self.channel_layer.group_send(
-                    f"venue_{venue_obj.id}" if venue_obj else "global_alerts",
-                    {
-                        'type': 'incident_resolution_broadcast',
-                        'incident_id': incident_id
-                    }
-                )
-            return
-        else:
-            message = data.get('message', 'CRITICAL ALERT')
-            location = data.get('location', 'UNKNOWN')
-            alert_type = data.get('type', 'GENERAL')
-            severity = "CRITICAL"
-            description = message
-            
-        try:
-            await save_alert(category=alert_type, severity=severity, location=location, description=description, venue=venue_obj)
+                description = message
+                
+            try:
+                await save_alert(category=alert_type, severity=severity, location=location, description=description, venue=venue_obj)
+            except Exception as e:
+                print(f"ERROR: Failed to commit alert to database: {e}")
+
+            if alert_type != 'audit_log':
+                # ... broadcast logic ...
+                # Role-Specific Broadcast
+                target_groups = ["global_alerts"] # Police always see all
+                if venue_obj:
+                    target_groups.append(f"venue_{venue_obj.id}")
+                if 'MEDICAL' in alert_type:
+                    target_groups.append("medical_alerts")
+
+                for group in target_groups:
+                    await self.channel_layer.group_send(
+                        group,
+                        {
+                            'type': 'global_emergency_alert',
+                            'message': message,
+                            'location': location,
+                            'alert_type': alert_type
+                        }
+                    )
         except Exception as e:
-            print(f"ERROR: Failed to commit alert to database: {e}")
-
-        if alert_type != 'audit_log':
-            # ... broadcast logic ...
-            # Role-Specific Broadcast
-            target_groups = ["global_alerts"] # Police always see all
-            if venue_obj:
-                target_groups.append(f"venue_{venue_obj.id}")
-            if 'MEDICAL' in alert_type:
-                target_groups.append("medical_alerts")
-
-            for group in target_groups:
-                await self.channel_layer.group_send(
-                    group,
-                    {
-                        'type': 'global_emergency_alert',
-                        'message': message,
-                        'location': location,
-                        'alert_type': alert_type
-                    }
-                )
+            print(f"WS Error (Global): {e}")
+            await self.send(text_data=json.dumps({
+                'error': str(e),
+                'message': 'System busy, using standard protocols.'
+            }))
 
     async def global_emergency_alert(self, event):
         await self.send(text_data=json.dumps({
