@@ -12,14 +12,31 @@ model = genai.GenerativeModel('gemini-1.5-flash')
 
 @database_sync_to_async
 def save_message(incident_id, sender_id, message):
-    incident = EmergencyIncident.objects.get(id=incident_id)
-    sender = CustomUser.objects.get(id=sender_id)
-    msg = HelpDeskMessage.objects.create(
-        incident=incident,
-        sender=sender,
-        message=message
-    )
-    return msg
+    try:
+        incident = EmergencyIncident.objects.get(id=incident_id)
+        
+        # Resolve sender
+        sender = None
+        if isinstance(sender_id, int) or (isinstance(sender_id, str) and sender_id.isdigit()):
+            try:
+                sender = CustomUser.objects.get(id=sender_id)
+            except CustomUser.DoesNotExist:
+                pass
+        elif sender_id == 'ai_assistant':
+            # Handle AI Assistant identification - optionally fetch a specific AI user
+            try:
+                sender = CustomUser.objects.filter(username='ai_assistant').first()
+            except: pass
+
+        msg = HelpDeskMessage.objects.create(
+            incident=incident,
+            sender=sender, # Can be None for Guest/Anonymous
+            message=message
+        )
+        return msg
+    except Exception as e:
+        print(f"Error in save_message: {e}")
+        return None
 
 @database_sync_to_async
 def save_alert(category, severity, location, description, venue=None):

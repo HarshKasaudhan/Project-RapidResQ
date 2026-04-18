@@ -58,12 +58,13 @@ class EmergencyIncident(models.Model):
 
 class HelpDeskMessage(models.Model):
     incident = models.ForeignKey(EmergencyIncident, on_delete=models.CASCADE, related_name='messages')
-    sender = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='messages_sent')
+    sender = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='messages_sent', null=True, blank=True)
     message = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Message from {self.sender.username} on Incident {self.incident.id}"
+        sender_name = self.sender.username if self.sender else "Anonymous"
+        return f"Message from {sender_name} on Incident {self.incident.id}"
 
 class ActionAuditLog(models.Model):
     incident = models.ForeignKey(EmergencyIncident, on_delete=models.CASCADE, related_name='audit_logs')
