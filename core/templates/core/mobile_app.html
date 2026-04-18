@@ -725,14 +725,79 @@
             document.getElementById('chat-widget').classList.remove('hidden');
             const protocol = location.protocol === 'https:' ? 'wss://' : 'ws://';
             chatSocket = new WebSocket(`${protocol}${location.host}/ws/chat/${id}/`);
+            
+            const msgBox = document.getElementById('chat-messages');
+            const chatInp = document.getElementById('chat-input');
+            const chatSend = document.getElementById('chat-send');
+            const chatMic = document.getElementById('chat-mic');
+
             chatSocket.onmessage = (e) => {
                 const data = JSON.parse(e.data);
-                const msgBox = document.getElementById('chat-messages');
                 const div = document.createElement('div');
-                div.className = data.sender_id === 'user' ? "bg-cyan-500 text-black p-2 rounded-lg ml-auto" : "bg-white/10 p-2 rounded-lg";
-                div.innerHTML = `<p class='text-[10px]'>${data.message}</p>`;
+                
+                if (data.sender_id === 'user') {
+                    div.className = "bg-cyan-500 text-black p-3 rounded-2xl rounded-tr-none ml-auto max-w-[85%] shadow-lg transition-all transform scale-100";
+                } else if (data.is_ai || data.sender_id === 'ai_assistant') {
+                    div.className = "bg-indigo-600/90 text-white p-3 rounded-2xl rounded-tl-none mr-auto max-w-[85%] border border-indigo-400/30 shadow-[0_0_15px_rgba(79,70,229,0.3)] animate-pulse";
+                    div.innerHTML = `<p class="text-[8px] font-black uppercase tracking-widest opacity-70 mb-1">🤖 AI Assistant</p>`;
+                } else {
+                    div.className = "bg-white/10 text-white p-3 rounded-2xl rounded-tl-none mr-auto max-w-[85%] border border-white/5";
+                    div.innerHTML = `<p class="text-[8px] font-black uppercase tracking-widest opacity-70 mb-1">👮 Command</p>`;
+                }
+                
+                const p = document.createElement('p');
+                p.className = "text-[11px] font-bold leading-tight";
+                p.textContent = data.message;
+                div.appendChild(p);
+                
                 msgBox.appendChild(div);
-                msgBox.scrollTop = msgBox.scrollHeight;
+                div.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                if (data.is_ai) playAlertAudio(data.message); // AI speaks back
+            };
+
+            const sendMessage = () => {
+                const text = chatInp.value.trim();
+                if (text && chatSocket.readyState === WebSocket.OPEN) {
+                    chatSocket.send(JSON.stringify({ message: text, sender_id: 'user' }));
+                    chatInp.value = '';
+                    chatInp.focus();
+                }
+            };
+
+            chatSend.onclick = sendMessage;
+            chatInp.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
+
+            // Task 1: Web Speech API for Chat Mic
+            if (chatMic) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (SpeechRecognition) {
+                    const recognition = new SpeechRecognition();
+                    recognition.lang = 'en-US'; // Default, but supports Hindi if browser allows
+                    recognition.continuous = false;
+                    recognition.interimResults = false;
+
+                    chatMic.onclick = () => {
+                        recognition.start();
+                        chatMic.classList.add('text-red-500', 'animate-pulse');
+                    };
+
+                    recognition.onresult = (event) => {
+                        chatInp.value = event.results[0][0].transcript;
+                        chatMic.classList.remove('text-red-500', 'animate-pulse');
+                        chatInp.scrollIntoView();
+                    };
+
+                    recognition.onerror = () => chatMic.classList.remove('text-red-500', 'animate-pulse');
+                    recognition.onend = () => chatMic.classList.remove('text-red-500', 'animate-pulse');
+                }
+            }
+
+            // Task 3: Mobile Keyboard Focus Adjustment
+            chatInp.onfocus = () => {
+                setTimeout(() => {
+                    msgBox.scrollTop = msgBox.scrollHeight;
+                    chatInp.scrollIntoView({ behavior: 'smooth' });
+                }, 300);
             };
         }
 
