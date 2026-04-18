@@ -57,22 +57,43 @@ RapidResQ acts as a resilient, closed-loop rescue engine that works offline, pri
 
 ## 🚀 Local Setup & Installation
 
-1. **Clone the repository:**
-   ```bash
-   git clone (https://github.com/HarshKasaudhan/Project-RapidResQ)
-   cd rapidresq
-2. **Create a virtual environment:**
-    ```bash
-    python -m venv venv
-    source venv/Scripts/activate  # On Windows
-3. **Install dependencies:**
-    ```Bash
-    pip install -r requirements.txt
-4. **Environment Variables: Create a .env file in the root directory and add:**
-    ```Code snippet
-    GEMINI_API_KEY=your_google_gemini_key
-    DATABASE_URL=your_supabase_url
-5. **Run Migrations & Server:**
-    ```Bash
-    python manage.py migrate
-    daphne -b 0.0.0.0 -p 8000 rapidresq_backend.asgi:application
+### 1. Clone the repository
+```bash
+git clone https://github.com/HarshKasaudhan/Project-RapidResQ.git
+cd Project-RapidResQ
+```
+
+### 2. Setup Virtual Environment
+```bash
+python -m venv venv
+# On Windows:
+venv\Scripts\activate
+# On macOS/Linux:
+source venv/bin/activate
+```
+
+### 3. Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Environment Variables
+Create a `.env` file and add your credentials:
+```env
+GEMINI_API_KEY=your_api_key_here
+DATABASE_URL=your_db_url
+SECRET_KEY=your_django_secret_key
+```
+
+### 5. Run Migrations & Start Server
+```bash
+python manage.py migrate
+python manage.py runserver
+```
+
+👨‍💻 **Developed By**
+Harsh Kasaudhan, Deepak Verma, Ankur Singh | B.Tech Computer Science | SRMCEM
+
+🏆 **Recognitions**
+Project Submissions: Google Solution Challenge 2026.
+Team: Phantom X

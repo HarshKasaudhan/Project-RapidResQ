@@ -511,6 +511,44 @@
             recognition.start();
         }
 
+        // --- FEATURE 4: Spatial Intelligence (Haversine) ---
+        function calculateDistanceMeters(lat1, lon1, lat2, lon2) {
+            const R = 6371e3; // Earth's radius in meters
+            const φ1 = lat1 * Math.PI / 180;
+            const φ2 = lat2 * Math.PI / 180;
+            const Δφ = (lat2 - lat1) * Math.PI / 180;
+            const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+            const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                      Math.cos(φ1) * Math.cos(φ2) *
+                      Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+            return R * c; // Distance in meters
+        }
+
+        function showSafeZoneNotification(data) {
+            UI.voice.classList.add('hidden');
+            UI.sos.classList.add('hidden');
+            UI.undo.classList.add('hidden');
+            
+            const evacTitle = document.getElementById('evac-title');
+            const safetyText = document.getElementById('safety-text');
+            const evacIcon = document.getElementById('evac-icon');
+            const safetyBox = document.getElementById('safety-box');
+            
+            evacTitle.textContent = "🛡️ SECTOR SECURE";
+            evacTitle.className = "text-4xl font-black tracking-normal mb-4 uppercase text-emerald-500 leading-none";
+            evacIcon.style.backgroundColor = "#10b981";
+            evacIcon.innerHTML = `<svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>`;
+            safetyBox.style.borderLeftColor = "#10b981";
+            
+            safetyText.innerHTML = "Safe Zone: Emergency reported in another sector. You are safe. Please keep pathways clear for responders.";
+            
+            UI.evac.classList.replace('hidden', 'flex');
+            document.getElementById('strobe-layer').classList.add('hidden'); // Disable strobe for safe zones
+        }
+
         function fallbackToManualDispatch(reason) {
             console.warn("Manual Fallback:", reason);
             showEvacuation({
@@ -530,7 +568,27 @@
                 const data = JSON.parse(e.data);
                 if (data.type === 'emergency_confirmed') {
                     if (analysisTimeout) clearTimeout(analysisTimeout);
-                    showEvacuation(data);
+                    
+                    // --- DYNAMIC GEO-FENCING FILTER ---
+                    const alertLat = parseFloat(data.lat);
+                    const alertLng = parseFloat(data.lng);
+
+                    // If coordinates are provided and user location is known
+                    if (alertLat && alertLng && alertLat !== 0 && currentLat !== 0) {
+                        const distance = calculateDistanceMeters(currentLat, currentLng, alertLat, alertLng);
+                        console.log(`[GEO-FENCE] Incident detected at ${distance.toFixed(1)}m`);
+
+                        if (distance <= 100) {
+                            // Critical Zone: Trigger Full Red Alert
+                            showEvacuation(data);
+                        } else {
+                            // Safe Zone: Trigger Subtle Info UI
+                            showSafeZoneNotification(data);
+                        }
+                    } else {
+                        // Fallback: If coordinates are missing/0, assume Venue-Wide Alert (Safety First)
+                        showEvacuation(data);
+                    }
                 }
             };
             socket.onclose = () => setTimeout(connectAlerts, 2000);

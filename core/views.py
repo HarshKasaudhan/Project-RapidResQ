@@ -136,11 +136,24 @@ def register_responder(request):
     name = request.GET.get('name', 'Official Unit')
     if not all([rid, pwd, dept]):
         return JsonResponse({'error': 'Missing parameters'}, status=400)
-    responder, created = OfficialResponder.objects.get_or_create(
-        official_id=rid,
-        defaults={'name': name, 'password': pwd, 'department': dept.upper()}
-    )
-    return JsonResponse({'status': 'Created' if created else 'Exists', 'official_id': rid, 'department': dept})
+    
+    try:
+        with transaction.atomic():
+            user, created_user = CustomUser.objects.get_or_create(
+                username=rid,
+                defaults={'role': 'FirstResponder'}
+            )
+            if created_user:
+                user.set_password(pwd)
+                user.save()
+
+            responder, created = OfficialResponder.objects.get_or_create(
+                official_id=rid,
+                defaults={'name': name, 'password': pwd, 'department': dept.upper(), 'user': user}
+            )
+            return JsonResponse({'status': 'Created' if created else 'Exists', 'official_id': rid, 'department': dept})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 def venue_login(request):
     if request.method == 'POST':
@@ -292,23 +305,33 @@ def register_venue(request):
     name = request.GET.get('name', 'RapidResQ Hotel')
     pwd = request.GET.get('pass', 'admin123')
     
-    venue, created = Venue.objects.get_or_create(
-        unique_venue_id=vid,
-        defaults={'hotel_name': name, 'address': 'Default Address'}
-    )
-    if created or not venue.admin_password:
-        venue.set_admin_password(pwd)
-        venue.save()
-        status = "Created"
-    else:
-        status = "Already Exists"
-        
-    return JsonResponse({
-        'status': status,
-        'venue_id': vid,
-        'hotel_name': name,
-        'message': f'Use this ID ({vid}) and password ({pwd}) to login.'
-    })
+    try:
+        with transaction.atomic():
+            venue, created = Venue.objects.get_or_create(
+                unique_venue_id=vid,
+                defaults={'hotel_name': name, 'address': 'Default Address'}
+            )
+            if created or not venue.admin_password:
+                venue.set_admin_password(pwd)
+                venue.save()
+
+            admin_user, created_user = CustomUser.objects.get_or_create(
+                username=vid,
+                defaults={'role': 'Admin', 'facility': venue}
+            )
+            if created_user:
+                admin_user.set_password(pwd)
+                admin_user.save()
+                
+            status = "Created" if created else "Already Exists"
+            return JsonResponse({
+                'status': status,
+                'venue_id': vid,
+                'hotel_name': name,
+                'message': f'Use this ID ({vid}) and password ({pwd}) to login.'
+            })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 def staff_portal(request):
     staff_id = request.session.get('staff_id')
