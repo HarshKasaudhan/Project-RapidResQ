@@ -76,11 +76,15 @@ class HelpDeskConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
-        sender_id = text_data_json['sender_id']
-        message = text_data_json['message']
+        sender_id = text_data_json.get('sender_id', 'user')
+        message = text_data_json.get('message', '')
 
-        msg = await save_message(self.incident_id, sender_id, message)
+        if not message: return
 
+        # Save user message
+        await save_message(self.incident_id, sender_id, message)
+
+        # Broadcast user message to group
         await self.channel_layer.group_send(
             self.group_name,
             {
@@ -90,13 +94,34 @@ class HelpDeskConsumer(AsyncWebsocketConsumer):
             }
         )
 
+        # If user sends message, trigger Gemini for real-time guidance
+        if sender_id == 'user':
+            ai_data = await analyze_with_gemini(message)
+            ai_msg = ai_data.get('safety_guide', 'Emergency responders are on the way.')
+            
+            # Save AI response
+            await save_message(self.incident_id, 'ai_assistant', ai_msg)
+            
+            # Broadcast AI message
+            await self.channel_layer.group_send(
+                self.group_name,
+                {
+                    'type': 'chat_message',
+                    'message': ai_msg,
+                    'sender_id': 'ai_assistant',
+                    'is_ai': True
+                }
+            )
+
     async def chat_message(self, event):
         message = event['message']
         sender_id = event['sender_id']
+        is_ai = event.get('is_ai', False)
 
         await self.send(text_data=json.dumps({
             'message': message,
-            'sender_id': sender_id
+            'sender_id': sender_id,
+            'is_ai': is_ai
         }))
 
 @sync_to_async
