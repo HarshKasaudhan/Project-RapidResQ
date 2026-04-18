@@ -179,3 +179,5 @@ STORAGES = {
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'core.CustomUser'
+
+CSRF_TRUSTED_ORIGINS = ['https://rapidresq-6tww.onrender.com']
