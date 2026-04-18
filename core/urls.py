@@ -1,5 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+from django.views.generic import TemplateView
 from core.views import (
     CustomUserViewSet, VenueViewSet, EmergencyIncidentViewSet, 
     HelpDeskMessageViewSet, offline_safety_guide, command_dashboard, 
@@ -17,4 +18,6 @@ urlpatterns = [
     path('guide/', offline_safety_guide, name='offline_safety_guide'),
     path('dashboard/', command_dashboard, name='dashboard'),
     path('app/', guest_app, name='guest_app'),
+    path('sw.js', TemplateView.as_view(template_name='sw.js', content_type='application/javascript'), name='sw.js'),
+    
 ]
