@@ -59,7 +59,7 @@ RapidResQ acts as a resilient, closed-loop rescue engine that works offline, pri
 
 1. **Clone the repository:**
    ```bash
-   git clone [https://github.com/yourusername/rapidresq.git](https://github.com/yourusername/rapidresq.git)
+   git clone (https://github.com/HarshKasaudhan/Project-RapidResQ)
    cd rapidresq
 2. **Create a virtual environment:**
     ```bash
