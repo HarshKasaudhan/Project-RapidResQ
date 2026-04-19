@@ -17,6 +17,7 @@
         .toggle-checkbox:checked { right: 0; border-color: var(--primary-cyan); }
         .toggle-checkbox:checked + .toggle-label { background: linear-gradient(135deg, var(--primary-cyan) 0%, var(--secondary-blue) 100%); }
         .glass-panel { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -39,7 +40,7 @@
         </div>
     </header>
 
-    <main class="flex-grow flex flex-col items-center justify-center p-6">
+    <main class="flex-grow flex flex-col items-center p-6 space-y-6">
         <div class="glass-panel p-10 rounded-2xl w-full max-w-sm text-center">
             <div class="w-20 h-20 bg-[#02DEE5]/10 rounded-full flex items-center justify-center mx-auto mb-6"><div class="w-3 h-3 bg-[#02DEE5] rounded-full animate-ping"></div></div>
             <h2 class="text-2xl font-bold tracking-normal mb-2">Standby</h2>
@@ -47,6 +48,20 @@
             <div class="bg-black/40 border border-white/5 p-4 rounded-xl text-left font-mono">
                 <div class="text-[9px] uppercase font-bold text-gray-600 mb-2 tracking-widest">Telemetry</div>
                 <div class="text-[10px] text-[#02DEE5] whitespace-pre-wrap" id="gps-status">Syncing...</div>
+            </div>
+        </div>
+
+        <!-- NEW: Tactical Chat with Command -->
+        <div class="glass-panel w-full max-w-sm rounded-2xl flex flex-col h-80 overflow-hidden">
+            <div class="p-4 border-b border-white/5 bg-black/40">
+                <h3 class="text-[10px] font-bold text-[#02DEE5] uppercase tracking-widest">Tactical Comms</h3>
+            </div>
+            <div id="staff-chat-messages" class="flex-grow p-4 overflow-y-auto space-y-3 text-[11px] scrollbar-hide">
+                <div class="text-gray-500 text-center uppercase tracking-widest text-[8px] py-4">Encrypted Channel Active</div>
+            </div>
+            <div class="p-4 border-t border-white/5 flex gap-2">
+                <input type="text" id="staff-chat-input" class="flex-grow bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-[#02DEE5]" placeholder="Report update...">
+                <button id="staff-chat-send" class="bg-[#02DEE5] text-black px-4 py-3 rounded-xl font-black text-[10px] uppercase transition-transform active:scale-95">Send</button>
             </div>
         </div>
     </main>
@@ -57,20 +72,29 @@
             <div class="p-8">
                 <p class="text-gray-500 text-[10px] uppercase font-bold tracking-widest mb-2">Target Location</p>
                 <p class="font-mono text-xs text-white bg-white/5 py-3 rounded-lg border border-white/5 mb-8" id="dispatch-location">---</p>
+                
+                <!-- NEW: Responder Arrived Button -->
+                <button id="arrived-btn" class="w-full bg-amber-500 text-black font-black py-4 rounded-xl text-xs uppercase tracking-widest mb-4 transition-all active:scale-95 shadow-lg shadow-amber-500/20">Responder Arrived</button>
+
                 <div class="flex gap-4">
                     <button id="decline-btn" class="flex-1 py-4 text-xs font-bold text-gray-500 uppercase">Ignore</button>
                     <button id="accept-btn" class="flex-1 bg-[#02DEE5] text-black font-black py-4 rounded-xl text-xs uppercase tracking-widest">Acknowledge</button>
-                    <button id="verify-btn" class="hidden flex-1 bg-amber-500 text-black font-black py-4 rounded-xl text-xs uppercase tracking-widest animate-pulse">Verify Rescue</button>
+                    <button id="verify-btn" class="hidden flex-1 bg-green-500 text-black font-black py-4 rounded-xl text-xs uppercase tracking-widest animate-pulse">Verify Rescue</button>
                 </div>
             </div>
         </div>
     </div>
 
     {{ venue.id|json_script:"venue-id" }}
+    {{ staff.id|json_script:"staff-id" }}
+    <script>
+        const staffName = "{{ staff.name }}";
+    </script>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const venueId = JSON.parse(document.getElementById('venue-id').textContent);
+            const staffId = JSON.parse(document.getElementById('staff-id').textContent);
             const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
             const toggle = document.getElementById('availability-toggle');
             const statusText = document.getElementById('status-text');
@@ -87,43 +111,19 @@
                     gpsStatus.textContent = `Lat: ${lat.toFixed(5)}\nLng: ${lng.toFixed(5)}\nAcc: ±${Math.round(pos.coords.accuracy)}m`;
                     if (pos.coords.accuracy < 30) {
                         fetch('', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }, body: JSON.stringify({ lat: lat, lng: lng }) });
+                        if (socket && socket.readyState === WebSocket.OPEN) {
+                            socket.send(JSON.stringify({ type: 'staff_location', staff_id: staffId, venue_id: venueId, lat: lat, lng: lng, name: staffName }));
+                        }
                     }
                 }, null, { enableHighAccuracy: true });
             }
 
-            // --- FEATURE 3: Closed-Loop Rescue Verification ---
             let currentActiveIncidentId = null;
-
-            async function initiateRescueHandshake(incidentId) {
-                console.log("Starting Proximity Rescue Handshake...");
-                
-                try {
-                    // Failsafe: Check API support
-                    if (!navigator.bluetooth) throw new Error("Bluetooth Unsupported");
-                    
-                    // Request any nearby device to simulate the handshake
-                    const device = await navigator.bluetooth.requestDevice({
-                        acceptAllDevices: true
-                    });
-                    
-                    console.log(`Paired with: ${device.name}. Handshake complete.`);
-                    completeRescue(incidentId);
-                } catch (err) {
-                    console.warn("Handshake Error:", err);
-                    // Hackathon Demo Override
-                    if (confirm("Bluetooth Handshake failed or cancelled. Proceed with Manual Proximity Verification?")) {
-                        completeRescue(incidentId);
-                    }
-                }
-            }
 
             function completeRescue(id) {
                 if (socket && socket.readyState === WebSocket.OPEN) {
-                    socket.send(JSON.stringify({
-                        type: 'rescue_verified',
-                        incident_id: id
-                    }));
-                    showToast("Rescue Confirmed & Logged.");
+                    socket.send(JSON.stringify({ type: 'rescue_verified', incident_id: id }));
+                    showToast("Rescue Confirmed.");
                     document.getElementById('dispatch-ui').classList.replace('flex', 'hidden');
                     document.getElementById('verify-btn').classList.add('hidden');
                     document.getElementById('accept-btn').classList.remove('hidden');
@@ -133,24 +133,31 @@
             function showToast(msg) {
                 const t = document.createElement('div');
                 t.className = "fixed bottom-10 left-1/2 -translate-x-1/2 bg-[#02DEE5] text-black px-6 py-3 rounded-full font-black text-[10px] uppercase tracking-widest z-[2000]";
-                t.textContent = msg;
-                document.body.appendChild(t);
-                setTimeout(() => t.remove(), 3000);
+                t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 3000);
             }
 
-            // Hook UI buttons
             document.getElementById('accept-btn').onclick = () => {
                 document.getElementById('accept-btn').classList.add('hidden');
                 document.getElementById('verify-btn').classList.remove('hidden');
-                // Logic to keep the UI open for verification
             };
 
             document.getElementById('verify-btn').onclick = () => {
-                if (currentActiveIncidentId) initiateRescueHandshake(currentActiveIncidentId);
+                if (currentActiveIncidentId) completeRescue(currentActiveIncidentId);
+            };
+
+            // Responder Arrived Button Logic
+            document.getElementById('arrived-btn').onclick = () => {
+                if (currentActiveIncidentId && socket && socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify({ type: 'incident_resolving', incident_id: currentActiveIncidentId, staff_name: staffName }));
+                    showToast("Status: ON-SCENE Reported");
+                    document.getElementById('arrived-btn').textContent = "Arrived (Reported)";
+                    document.getElementById('arrived-btn').disabled = true;
+                }
             };
 
             const socketUrl = `${window.location.protocol === 'https:' ? 'wss://' : 'ws://'}${window.location.host}/ws/alerts/?venue_id=${venueId}`;
             const socket = new WebSocket(socketUrl);
+            
             socket.onmessage = e => {
                 const data = JSON.parse(e.data);
                 if (data.alert) {
@@ -158,8 +165,37 @@
                     document.getElementById('dispatch-location').textContent = data.alert.location;
                     document.getElementById('dispatch-category').textContent = data.alert.type;
                     document.getElementById('dispatch-ui').classList.replace('hidden', 'flex');
+                    document.getElementById('arrived-btn').textContent = "Responder Arrived";
+                    document.getElementById('arrived-btn').disabled = false;
+                }
+                if (data.type === 'staff_chat') appendChatMessage(data.staff_name, data.message, data.staff_id == staffId);
+                if (data.type === 'incident_resolved') {
+                    if (data.incident_id == currentActiveIncidentId) {
+                        document.getElementById('dispatch-ui').classList.replace('flex', 'hidden');
+                        showToast("Incident Resolved by Peer");
+                    }
                 }
             };
+
+            const chatInput = document.getElementById('staff-chat-input');
+            const chatSend = document.getElementById('staff-chat-send');
+            const chatMessages = document.getElementById('staff-chat-messages');
+
+            function appendChatMessage(name, msg, isMe) {
+                const div = document.createElement('div');
+                div.className = isMe ? "ml-auto bg-[#02DEE5] text-black p-3 rounded-2xl rounded-tr-none max-w-[85%] font-bold" : "mr-auto bg-white/10 text-white p-3 rounded-2xl rounded-tl-none max-w-[85%]";
+                div.innerHTML = `<p class="text-[8px] uppercase opacity-70 mb-1">${name}</p><p>${msg}</p>`;
+                chatMessages.appendChild(div); chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            chatSend.onclick = () => {
+                const msg = chatInput.value.trim();
+                if (msg && socket && socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify({ type: 'staff_command_chat', venue_id: venueId, staff_id: staffId, staff_name: staffName, message: msg }));
+                    chatInput.value = '';
+                }
+            };
+            chatInput.onkeypress = (e) => { if (e.key === 'Enter') chatSend.click(); };
             document.getElementById('decline-btn').onclick = () => document.getElementById('dispatch-ui').classList.replace('flex', 'hidden');
         });
     </script>

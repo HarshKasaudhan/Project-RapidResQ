@@ -104,7 +104,15 @@ def response_portal(request, role):
         request.session.flush()
         return redirect('responder_login')
 
-    alerts_history = EmergencyAlert.objects.all().order_by('-created_at')[:20]
+    # Strict filtering by hazard type
+    hazard_map = {
+        'POLICE': 'Security',
+        'MEDICAL': 'Medical',
+        'FIRE': 'Fire'
+    }
+    target_hazard = hazard_map.get(role.upper(), 'General')
+    
+    alerts_history = EmergencyAlert.objects.filter(category__icontains=target_hazard).order_by('-created_at')[:20]
     context = {
         'role': role.upper(),
         'alerts_history': alerts_history,

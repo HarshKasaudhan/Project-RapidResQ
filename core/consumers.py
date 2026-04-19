@@ -119,12 +119,24 @@ class HelpDeskConsumer(AsyncWebsocketConsumer):
             await save_message(self.incident_id, sender_id, message)
 
             # Broadcast user message to group
+            chat_data = {
+                'type': 'chat_message',
+                'message': message,
+                'sender_id': sender_id,
+                'incident_id': self.incident_id
+            }
+            
             await self.channel_layer.group_send(
                 self.group_name,
+                chat_data
+            )
+
+            # BROADCAST TO GLOBAL COMMAND DASHBOARD
+            await self.channel_layer.group_send(
+                'command_dashboard',
                 {
-                    'type': 'chat_message',
-                    'message': message,
-                    'sender_id': sender_id
+                    'type': 'command_chat_sync',
+                    'data': chat_data
                 }
             )
 
@@ -136,14 +148,26 @@ class HelpDeskConsumer(AsyncWebsocketConsumer):
                 # Save AI response
                 await save_message(self.incident_id, 'ai_assistant', ai_msg)
                 
+                ai_broadcast_data = {
+                    'type': 'chat_message',
+                    'message': ai_msg,
+                    'sender_id': 'ai_assistant',
+                    'is_ai': True,
+                    'incident_id': self.incident_id
+                }
+
                 # Broadcast AI message
                 await self.channel_layer.group_send(
                     self.group_name,
+                    ai_broadcast_data
+                )
+
+                # SYNC AI TO COMMAND DASHBOARD
+                await self.channel_layer.group_send(
+                    'command_dashboard',
                     {
-                        'type': 'chat_message',
-                        'message': ai_msg,
-                        'sender_id': 'ai_assistant',
-                        'is_ai': True
+                        'type': 'command_chat_sync',
+                        'data': ai_broadcast_data
                     }
                 )
         except Exception as e:
@@ -251,14 +275,18 @@ class GlobalAlertConsumer(AsyncWebsocketConsumer):
         self.role = params.get('role', [''])[0]
         
         # Determine Primary Group membership
-        if self.role == 'POLICE':
-            self.group_name = 'global_alerts'
+        if self.role == 'ADMIN':
+            self.group_name = 'command_dashboard'
+        elif self.role == 'POLICE':
+            self.group_name = 'police_alerts'
         elif self.role == 'MEDICAL':
             self.group_name = 'medical_alerts'
+        elif self.role == 'FIRE':
+            self.group_name = 'fire_alerts'
         elif self.venue_id:
             self.group_name = f'venue_{self.venue_id}'
         else:
-            self.group_name = 'global_alerts'
+            self.group_name = 'command_dashboard'
 
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
@@ -277,6 +305,7 @@ class GlobalAlertConsumer(AsyncWebsocketConsumer):
             # Handle Staff Movement Updates
             if data.get('type') == 'staff_location':
                 try:
+                    # Notify Venue Admins and Staff
                     await self.channel_layer.group_send(
                         f"venue_{data['venue_id']}",
                         {
@@ -287,8 +316,125 @@ class GlobalAlertConsumer(AsyncWebsocketConsumer):
                             'name': data['name']
                         }
                     )
+                    # Also notify command_dashboard
+                    await self.channel_layer.group_send(
+                        'command_dashboard',
+                        {
+                            'type': 'staff_movement',
+                            'staff_id': data['staff_id'],
+                            'lat': data['lat'],
+                            'lng': data['lng'],
+                            'name': data['name']
+                        }
+                    )
                 except KeyError as e:
                     print(f"ERROR: Missing staff telemetry key: {e}")
+                return
+
+            # --- NEW: Admin Multi-Unit Co-Dispatch Routing ---
+            if data.get('type') == 'dispatch_help':
+                incident_id = data.get('incident_id')
+                hazard_type = data.get('hazard_type', 'General')
+                venue_id = data.get('venue_id')
+                
+                target_groups = ['police_alerts'] # Default: Police only
+                
+                if 'Medical' in hazard_type:
+                    target_groups.append('medical_alerts')
+                elif 'Fire' in hazard_type:
+                    target_groups.append('fire_alerts')
+                
+                # Broadcoast to selected authority groups
+                for group in target_groups:
+                    await self.channel_layer.group_send(
+                        group,
+                        {
+                            'type': 'global_emergency_alert',
+                            'message': f"DISPATCH REQUEST: {hazard_type}",
+                            'location': data.get('location', 'Venue Location'),
+                            'alert_type': hazard_type,
+                            'incident_id': incident_id,
+                            'severity': 'HIGH'
+                        }
+                    )
+                
+                # Notify command_dashboard for UI sync
+                await self.channel_layer.group_send(
+                    'command_dashboard',
+                    {
+                        'type': 'incident_status_update',
+                        'incident_id': incident_id,
+                        'status': 'Dispatched',
+                        'staff_name': 'Admin'
+                    }
+                )
+                return
+
+            # --- NEW: Staff -> Command Tactical Chat ---
+            if data.get('type') == 'staff_command_chat':
+                await self.channel_layer.group_send(
+                    'command_dashboard',
+                    {
+                        'type': 'staff_chat_broadcast',
+                        'message': data['message'],
+                        'staff_name': data['staff_name'],
+                        'staff_id': data['staff_id']
+                    }
+                )
+                return
+
+            # --- NEW: Responder Arrived (On-Scene) ---
+            if data.get('type') == 'incident_resolving':
+                incident_id = data.get('incident_id')
+                # Notify Command Dashboard
+                await self.channel_layer.group_send(
+                    'command_dashboard',
+                    {
+                        'type': 'incident_status_update',
+                        'incident_id': incident_id,
+                        'status': 'On-Scene',
+                        'staff_name': data.get('staff_name')
+                    }
+                )
+                # Notify Victim Room
+                await self.channel_layer.group_send(
+                    f'incident_chat_{incident_id}',
+                    {
+                        'type': 'chat_message',
+                        'message': "RESPONDER ON-SCENE. Stay where you are.",
+                        'sender_id': 'staff_arrival',
+                        'is_authority': True
+                    }
+                )
+                return
+
+            # --- NEW: Authority Dispatch with ETA ---
+            if data.get('type') == 'authority_dispatch':
+                incident_id = data.get('incident_id')
+                eta = data.get('eta')
+                role = data.get('role')
+                
+                # Notify Victim Room
+                await self.channel_layer.group_send(
+                    f'incident_chat_{incident_id}',
+                    {
+                        'type': 'chat_message',
+                        'message': f"HELP IS EN ROUTE - ETA: {eta} mins",
+                        'sender_id': f'{role.lower()}_dispatch',
+                        'is_authority': True
+                    }
+                )
+                
+                # Notify Command Dashboard
+                await self.channel_layer.group_send(
+                    'command_dashboard',
+                    {
+                        'type': 'authority_dispatch_broadcast',
+                        'incident_id': incident_id,
+                        'eta': eta,
+                        'role': role
+                    }
+                )
                 return
 
             # Handle SOS Alerts
@@ -351,12 +497,20 @@ class GlobalAlertConsumer(AsyncWebsocketConsumer):
                 if await resolve_incident_in_db(incident_id):
                     # Notify Admin Dashboard & Staff
                     await self.channel_layer.group_send(
-                        f"venue_{venue_obj.id}" if venue_obj else "global_alerts",
+                        'command_dashboard',
                         {
                             'type': 'incident_resolution_broadcast',
                             'incident_id': incident_id
                         }
                     )
+                    if venue_obj:
+                        await self.channel_layer.group_send(
+                            f"venue_{venue_obj.id}",
+                            {
+                                'type': 'incident_resolution_broadcast',
+                                'incident_id': incident_id
+                            }
+                        )
                 return
             else:
                 message = data.get('message', 'CRITICAL ALERT')
@@ -371,13 +525,17 @@ class GlobalAlertConsumer(AsyncWebsocketConsumer):
                 print(f"ERROR: Failed to commit alert to database: {e}")
 
             if alert_type != 'audit_log':
-                # ... broadcast logic ...
                 # Role-Specific Broadcast
-                target_groups = ["global_alerts"] # Police always see all
+                target_groups = ["command_dashboard"] # Admin always sees all
                 if venue_obj:
                     target_groups.append(f"venue_{venue_obj.id}")
-                if 'MEDICAL' in alert_type:
+                
+                # Indian Context Initial Routing
+                target_groups.append('police_alerts')
+                if 'MEDICAL' in alert_type.upper():
                     target_groups.append("medical_alerts")
+                elif 'FIRE' in alert_type.upper():
+                    target_groups.append("fire_alerts")
 
                 for group in target_groups:
                     await self.channel_layer.group_send(
@@ -386,7 +544,9 @@ class GlobalAlertConsumer(AsyncWebsocketConsumer):
                             'type': 'global_emergency_alert',
                             'message': message,
                             'location': location,
-                            'alert_type': alert_type
+                            'alert_type': alert_type,
+                            'incident_id': incident.id if 'incident' in locals() else None,
+                            'severity': severity
                         }
                     )
         except Exception as e:
@@ -398,11 +558,47 @@ class GlobalAlertConsumer(AsyncWebsocketConsumer):
 
     async def global_emergency_alert(self, event):
         await self.send(text_data=json.dumps({
+            'type': 'emergency_confirmed', # Map to standard frontend handler
             'alert': {
                 'message': event['message'],
                 'location': event['location'],
-                'type': event.get('alert_type', 'GENERAL')
-            }
+                'type': event.get('alert_type', 'GENERAL'),
+                'incident_id': event.get('incident_id'),
+                'severity': event.get('severity')
+            },
+            'category': event.get('alert_type'),
+            'incident_id': event.get('incident_id'),
+            'severity': event.get('severity')
+        }))
+
+    async def command_chat_sync(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'command_chat_sync',
+            'data': event['data']
+        }))
+
+    async def incident_status_update(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'incident_status_update',
+            'incident_id': event['incident_id'],
+            'status': event['status'],
+            'staff_name': event['staff_name']
+        }))
+
+    async def staff_chat_broadcast(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'staff_chat',
+            'message': event['message'],
+            'staff_name': event['staff_name'],
+            'staff_id': event['staff_id']
+        }))
+
+    async def authority_dispatch_broadcast(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'authority_dispatch',
+            'incident_id': event['incident_id'],
+            'eta': event['eta'],
+            'role': event['role']
         }))
 
     async def incident_resolution_broadcast(self, event):
