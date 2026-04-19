@@ -567,6 +567,7 @@
 
             socket.onmessage = (e) => {
                 const data = JSON.parse(e.data);
+                console.log("WebSocket Payload (Alerts):", data);
                 if (data.type === 'emergency_confirmed') {
                     if (analysisTimeout) clearTimeout(analysisTimeout);
                     
@@ -688,7 +689,8 @@
                 evacTitle.classList.add('text-red-500');
             }
 
-            safetyText.innerHTML = `${data.safety_guide}<br><br><span class="text-[10px] font-black uppercase tracking-[0.2em]" style="color: ${themeColor}">${eta}</span>`;
+            const instructionText = data.safety_guide || (data.alert ? data.alert.message : null) || data.message || "Emergency responders are responding.";
+            safetyText.innerHTML = `${instructionText}<br><br><span class="text-[10px] font-black uppercase tracking-[0.2em]" style="color: ${themeColor}">${eta}</span>`;
 
             if (UI.status) UI.status.textContent = "Active Response";
             UI.evac.classList.replace('hidden', 'flex');
@@ -696,7 +698,7 @@
             renderNavigation(data.category, data.case_type);
 
             // 4. Voice Sync with exact instruction
-            playAlertAudio(data.safety_guide, () => {
+            playAlertAudio(instructionText, () => {
                 // Task 1.4: Keep mic active for Medical follow-up
                 if (data.case_type === 'MEDICAL_CASE') {
                     setTimeout(() => startVoiceCapture(), 1000);
@@ -810,7 +812,7 @@
 
             chatSocket.onmessage = (e) => {
                 const data = JSON.parse(e.data);
-                console.log("[CHAT] Message received:", data);
+                console.log("WebSocket Payload (Chat):", data);
                 const div = document.createElement('div');
                 
                 if (data.sender_id === 'user') {
@@ -822,7 +824,7 @@
                     // Update the main instruction block dynamically
                     const safetyText = document.getElementById('safety-text');
                     if (safetyText) {
-                        const instructionText = data.actionable_guidance || data.guidance || data.instructions || data.message || "Emergency responders are on the way.";
+                        const instructionText = data.safety_guide || (data.alert ? data.alert.message : null) || data.message || "Emergency responders are on the way.";
                         safetyText.innerText = instructionText;
                     }
                 } else {
