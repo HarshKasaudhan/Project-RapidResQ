@@ -568,6 +568,24 @@
             socket.onmessage = (e) => {
                 const data = JSON.parse(e.data);
                 console.log("WebSocket Payload (Alerts):", data);
+
+                if (data.type === 'global_evacuation') {
+                    // 1. Vibration
+                    if (navigator.vibrate) { navigator.vibrate([1000, 500, 1000, 500, 2000]); }
+                    
+                    // 2. Visual Update
+                    showEvacuation({
+                        category: "🚨 MASS EVACUATION",
+                        case_type: "GENERAL_CASE",
+                        safety_guide: data.message,
+                        voice_message: data.message
+                    });
+                    
+                    // 3. Effect
+                    document.getElementById('strobe-layer').classList.replace('hidden', 'strobe-active');
+                    return;
+                }
+
                 if (data.type === 'emergency_confirmed') {
                     if (analysisTimeout) clearTimeout(analysisTimeout);
                     

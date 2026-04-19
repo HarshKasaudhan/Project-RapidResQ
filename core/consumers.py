@@ -94,6 +94,12 @@ class HelpDeskConsumer(AsyncWebsocketConsumer):
             self.channel_name
         )
 
+        # ADD TO GLOBAL MASS EVACUATION GROUP
+        await self.channel_layer.group_add(
+            'mass_evacuation',
+            self.channel_name
+        )
+
         await self.accept()
 
     async def disconnect(self, close_code):
@@ -101,8 +107,13 @@ class HelpDeskConsumer(AsyncWebsocketConsumer):
             self.group_name,
             self.channel_name
         )
+        await self.channel_layer.group_discard(
+            'mass_evacuation',
+            self.channel_name
+        )
 
     async def receive(self, text_data):
+        # ... (rest of receive remains same) ...
         try:
             try:
                 text_data_json = json.loads(text_data)
@@ -186,6 +197,13 @@ class HelpDeskConsumer(AsyncWebsocketConsumer):
             'message': message,
             'sender_id': sender_id,
             'is_ai': is_ai
+        }))
+
+    # GLOBAL EVACUATION HANDLER
+    async def evacuation_broadcast(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'global_evacuation',
+            'message': event['message']
         }))
 
 @sync_to_async
@@ -289,10 +307,15 @@ class GlobalAlertConsumer(AsyncWebsocketConsumer):
             self.group_name = 'command_dashboard'
 
         await self.channel_layer.group_add(self.group_name, self.channel_name)
+        
+        # ADD TO GLOBAL MASS EVACUATION GROUP
+        await self.channel_layer.group_add('mass_evacuation', self.channel_name)
+        
         await self.accept()
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
+        await self.channel_layer.group_discard('mass_evacuation', self.channel_name)
 
     async def receive(self, text_data):
         try:
@@ -300,6 +323,17 @@ class GlobalAlertConsumer(AsyncWebsocketConsumer):
                 data = json.loads(text_data)
             except json.JSONDecodeError:
                 print("ERROR: Malformed WebSocket data received.")
+                return
+
+            # --- NEW: MASS EVACUATION BROADCAST (Brahmastra) ---
+            if data.get('type') == 'global_evacuation':
+                await self.channel_layer.group_send(
+                    'mass_evacuation',
+                    {
+                        'type': 'evacuation_broadcast',
+                        'message': data.get('message', 'CRITICAL DANGER: EVACUATE PREMISES IMMEDIATELY.')
+                    }
+                )
                 return
 
             # Handle Staff Movement Updates
@@ -615,4 +649,10 @@ class GlobalAlertConsumer(AsyncWebsocketConsumer):
                 'lng': event['lng'],
                 'name': event['name']
             }
+        }))
+
+    async def evacuation_broadcast(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'global_evacuation',
+            'message': event['message']
         }))
