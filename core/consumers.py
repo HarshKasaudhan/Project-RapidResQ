@@ -365,6 +365,45 @@ class GlobalAlertConsumer(AsyncWebsocketConsumer):
                     print(f"ERROR: Missing staff telemetry key: {e}")
                 return
 
+            # --- NEW: Admin Manual Dispatch Control ---
+            if data.get('action') == 'dispatch':
+                incident_id = data.get('incident_id')
+                units = data.get('units', [])
+                custom_message = data.get('message', 'Immediate assistance required.')
+                
+                mapping = {
+                    'Police': 'police_alerts',
+                    'Medical': 'medical_alerts',
+                    'Fire': 'fire_alerts'
+                }
+
+                for unit in units:
+                    group = mapping.get(unit)
+                    if group:
+                        await self.channel_layer.group_send(
+                            group,
+                            {
+                                'type': 'global_emergency_alert',
+                                'message': f"MANUAL DISPATCH: {custom_message}",
+                                'location': 'Confirmed Venue Location',
+                                'alert_type': f'Manual {unit}',
+                                'incident_id': incident_id,
+                                'severity': 'CRITICAL'
+                            }
+                        )
+                
+                # Notify command_dashboard for UI sync
+                await self.channel_layer.group_send(
+                    'command_dashboard',
+                    {
+                        'type': 'incident_status_update',
+                        'incident_id': incident_id,
+                        'status': 'Dispatched',
+                        'staff_name': 'Admin (Manual)'
+                    }
+                )
+                return
+
             # --- NEW: Admin Multi-Unit Co-Dispatch Routing ---
             if data.get('type') == 'dispatch_help':
                 incident_id = data.get('incident_id')
