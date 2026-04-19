@@ -11,7 +11,12 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-    // Fix: Bypass service worker for cross-origin requests (Tailwind, Leaflet CDNs)
+    // Fix: Explicitly bypass service worker for Tailwind CDN to resolve CORS issues
+    if (event.request.url.includes('cdn.tailwindcss.com')) {
+        return;
+    }
+
+    // Fix: Bypass service worker for other cross-origin requests
     if (!event.request.url.startsWith(self.location.origin)) {
         return;
     }
