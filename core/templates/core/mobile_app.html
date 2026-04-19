@@ -564,8 +564,12 @@
             if (!navigator.onLine) return;
             const protocol = location.protocol === 'https:' ? 'wss://' : 'ws://';
             
-            // Ensure proper closing before re-init to prevent loops
+            // Fix: WebSocket Race Condition Guard
             if (socket) {
+                if (socket.readyState === WebSocket.CONNECTING || socket.readyState === WebSocket.OPEN) {
+                    console.log("Alerts WebSocket already active. Skipping re-initialization.");
+                    return;
+                }
                 socket.onclose = null;
                 socket.close();
             }
@@ -724,8 +728,10 @@
                 evacTitle.classList.add('text-red-500');
             }
 
-            const instructionText = data.safety_guide || (data.alert ? data.alert.message : null) || data.message || "Emergency responders are responding.";
-            safetyText.innerHTML = `${instructionText}<br><br><span class="text-[10px] font-black uppercase tracking-[0.2em]" style="color: ${themeColor}">${eta}</span>`;
+            // Fix AI Parsing Error: Strictly bind AI instruction text to correct payload keys
+            const instructionText = data.safety_guide || data.actionable_guidance || (data.alert ? data.alert.message : null) || data.message || "Emergency responders are responding.";
+            safetyText.innerText = instructionText;
+            safetyText.innerHTML += `<br><br><span class="text-[10px] font-black uppercase tracking-[0.2em]" style="color: ${themeColor}">${eta}</span>`;
 
             if (UI.status) UI.status.textContent = "Active Response";
 
@@ -743,7 +749,8 @@
         }
 
         function playAlertAudio(text, callback) {
-            if (!window.speechSynthesis) {
+            // Patch SpeechSynthesis Error: Wrapped in try...catch and check support
+            if (!('speechSynthesis' in window)) {
                 if (callback) callback();
                 return;
             }
@@ -830,20 +837,20 @@
         function initChat(id) {
             console.log("[CHAT] Initializing for incident:", id);
             
-            // Fixed loop prevention: Don't re-init if already connected to same ID
-            if (chatSocket && chatSocket.url.includes(`/ws/chat/${id}/`) && chatSocket.readyState === WebSocket.OPEN) {
-                return;
+            // Fix: WebSocket Race Condition Guard (Critical)
+            if (chatSocket) {
+                if (chatSocket.readyState === WebSocket.CONNECTING || chatSocket.readyState === WebSocket.OPEN) {
+                    console.log("Chat WebSocket already active. Skipping re-initialization.");
+                    return;
+                }
+                chatSocket.onclose = null;
+                chatSocket.close();
             }
 
             document.getElementById('chat-widget').classList.remove('hidden');
             
             const protocol = location.protocol === 'https:' ? 'wss://' : 'ws://';
             const chatUrl = `${protocol}${location.host}/ws/chat/${id}/`;
-            
-            if (chatSocket) {
-                chatSocket.onclose = null;
-                chatSocket.close();
-            }
             
             chatSocket = new WebSocket(chatUrl);
             
@@ -866,7 +873,7 @@
                     // Update the main instruction block dynamically
                     const safetyText = document.getElementById('safety-text');
                     if (safetyText) {
-                        const instructionText = data.safety_guide || (data.alert ? data.alert.message : null) || data.message || "Emergency responders are on the way.";
+                        const instructionText = data.safety_guide || data.actionable_guidance || (data.alert ? data.alert.message : null) || data.message || "Emergency responders are on the way.";
                         safetyText.innerText = instructionText;
                     }
                 } else {
