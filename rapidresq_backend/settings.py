@@ -44,7 +44,7 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = _HTTPS
 SECURE_HSTS_PRELOAD = _HTTPS
 SESSION_COOKIE_SECURE = _HTTPS
 CSRF_COOKIE_SECURE = _HTTPS
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https') if _HTTPS else None
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 
 # Application definition
@@ -154,6 +154,7 @@ USE_TZ = True
 
 # CSRF Trusted Origins (extend via env var)
 CSRF_TRUSTED_ORIGINS = [
+    "https://rapidresq-6tww.onrender.com",
     "https://*.railway.app",
     "https://*.render.com",
     "http://localhost:8000",
@@ -179,5 +180,3 @@ STORAGES = {
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'core.CustomUser'
-
-CSRF_TRUSTED_ORIGINS = ['https://rapidresq-6tww.onrender.com']
