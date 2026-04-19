@@ -105,6 +105,7 @@
     <script>
         let map, victimMarker;
         let staffLat = 0, staffLng = 0;
+        let lastVictimLat = 0, lastVictimLng = 0;
         let currentActiveIncidentId = null;
         const staffName = "{{ staff.name }}";
         const venueId = JSON.parse(document.getElementById('venue-id').textContent);
@@ -112,6 +113,7 @@
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
         function initMap() {
+            if (map) return;
             map = L.map('staff-map', {zoomControl: false, attributionControl: false}).setView([30.7699, 76.5756], 15);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { className: 'map-layer', maxZoom: 20 }).addTo(map);
         }
@@ -130,14 +132,31 @@
             document.getElementById('brief-location').textContent = data.location;
             
             if (!map) initMap();
+            
             const vLat = parseFloat(data.lat);
             const vLng = parseFloat(data.lng);
             
-            if (victimMarker) map.removeLayer(victimMarker);
-            victimMarker = L.marker([vLat, vLng], {
-                icon: L.divIcon({className: 'bg-red-600 w-4 h-4 rounded-full border-2 border-white animate-ping'})
-            }).addTo(map);
-            map.setView([vLat, vLng], 17);
+            if (!isNaN(vLat) && !isNaN(vLng)) {
+                const newLatLng = L.latLng(vLat, vLng);
+                
+                // Fix: 10m distance buffer to prevent jitter
+                if (!victimMarker) {
+                    victimMarker = L.marker(newLatLng, {
+                        icon: L.divIcon({className: 'bg-red-600 w-4 h-4 rounded-full border-2 border-white animate-ping'})
+                    }).addTo(map);
+                    lastVictimLat = vLat;
+                    lastVictimLng = vLng;
+                    map.setView(newLatLng, 17);
+                } else {
+                    const distance = map.distance(L.latLng(lastVictimLat, lastVictimLng), newLatLng);
+                    if (distance > 10) {
+                        victimMarker.setLatLng(newLatLng);
+                        lastVictimLat = vLat;
+                        lastVictimLng = vLng;
+                        map.panTo(newLatLng);
+                    }
+                }
+            }
 
             document.getElementById('nav-btn').onclick = () => {
                 const url = `https://www.google.com/maps/dir/?api=1&origin=${staffLat},${staffLng}&destination=${vLat},${vLng}&travelmode=walking`;
@@ -168,6 +187,7 @@
 
             socket.onmessage = e => {
                 const data = JSON.parse(e.data);
+                console.log("WS Payload:", data);
                 
                 // Dispatch or New Incident Alert
                 if (data.type === 'dispatch_alert' || data.type === 'global_emergency_alert' || data.alert) {
@@ -175,9 +195,12 @@
                     if (payload.incident_id) triggerDeployment(payload);
                 }
 
-                // Tactical Chat Sync
-                if (data.type === 'staff_chat_broadcast') {
-                    appendChatMessage(data.staff_name, data.message, data.staff_id == staffId || data.staff_id == 'admin');
+                // Fix: Correct Tactical Chat Sync Logic
+                if (data.type === 'staff_chat' || data.type === 'staff_chat_broadcast') {
+                    const sender = data.staff_name || data.sender_id || "Command";
+                    const message = data.message;
+                    const isMe = data.staff_id == staffId || data.sender_id == staffId;
+                    appendChatMessage(sender, message, isMe);
                 }
 
                 // Peer Resolution
@@ -208,11 +231,11 @@
             const chatSend = document.getElementById('staff-chat-send');
             const chatMessages = document.getElementById('staff-chat-messages');
 
-            function appendChatMessage(name, msg, isRelevant) {
+            function appendChatMessage(name, msg, isMe) {
                 const div = document.createElement('div');
-                const isMe = name === staffName;
-                div.className = isMe ? "ml-auto bg-[#1F76F3] text-white p-3 rounded-2xl rounded-tr-none max-w-[85%] font-bold" : "mr-auto bg-white/10 text-white p-3 rounded-2xl rounded-tl-none max-w-[85%]";
-                div.innerHTML = `<p class="text-[7px] uppercase opacity-50 mb-1">${name}</p><p>${msg}</p>`;
+                div.className = isMe ? "ml-auto bg-[#1F76F3] text-white p-3 rounded-2xl rounded-tr-none max-w-[85%] font-bold shadow-lg" : "mr-auto bg-white/10 text-white p-3 rounded-2xl rounded-tl-none max-w-[85%] border border-white/5";
+                const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                div.innerHTML = `<p class="text-[7px] uppercase opacity-50 mb-1 flex justify-between"><span>${name}</span><span>${time}</span></p><p>${msg}</p>`;
                 chatMessages.appendChild(div);
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             }
@@ -220,7 +243,14 @@
             chatSend.onclick = () => {
                 const msg = chatInput.value.trim();
                 if (msg && socket.readyState === WebSocket.OPEN) {
-                    socket.send(JSON.stringify({ type: 'staff_command_chat', venue_id: venueId, staff_id: staffId, staff_name: staffName, message: msg }));
+                    socket.send(JSON.stringify({ 
+                        type: 'staff_command_chat', 
+                        venue_id: venueId, 
+                        staff_id: staffId, 
+                        staff_name: staffName, 
+                        message: msg 
+                    }));
+                    // The server broadcasts it back, so it will be appended via onmessage
                     chatInput.value = '';
                 }
             };
