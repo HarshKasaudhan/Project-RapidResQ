@@ -12,7 +12,7 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('fetch', (event) => {
     // Fix: Explicitly bypass service worker for Tailwind CDN to resolve CORS issues
-    if (event.request.url.includes('cdn.tailwindcss.com')) {
+    if (event.request.url.includes('tailwindcss.com')) {
         return;
     }
 
