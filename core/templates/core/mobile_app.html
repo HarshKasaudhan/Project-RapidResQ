@@ -81,7 +81,7 @@
     </style>
 </head>
 
-<body class="antialiased text-white min-h-screen flex flex-col relative overflow-x-hidden">
+<body id="main-body" class="antialiased text-white min-h-screen flex flex-col relative overflow-x-hidden">
 
     <div id="strobe-layer" class="hidden"></div>
 
@@ -116,7 +116,7 @@
         </p>
     </div>
 
-    <div class="w-full max-w-[320px] mx-auto flex-grow flex flex-col items-center justify-center pt-20">
+    <div id="main-content" class="w-full max-w-[320px] mx-auto flex-grow flex flex-col items-center justify-center pt-20">
 
         <!-- SOS TRIGGER UI -->
         <div id="sos-ui" class="w-full flex flex-col items-center">
@@ -563,6 +563,13 @@
         function connectAlerts() {
             if (!navigator.onLine) return;
             const protocol = location.protocol === 'https:' ? 'wss://' : 'ws://';
+            
+            // Ensure proper closing before re-init to prevent loops
+            if (socket) {
+                socket.onclose = null;
+                socket.close();
+            }
+
             socket = new WebSocket(`${protocol}${location.host}/ws/alerts/`);
 
             socket.onmessage = (e) => {
@@ -573,7 +580,8 @@
                     // 1. Vibration
                     if (navigator.vibrate) { navigator.vibrate([1000, 500, 1000, 500, 2000]); }
                     
-                    // 2. Visual Update
+                    // 2. Visual Update (Fixed to prevent UI blanking)
+                    document.getElementById('main-body').classList.add('bg-red-900');
                     showEvacuation({
                         category: "🚨 MASS EVACUATION",
                         case_type: "GENERAL_CASE",
@@ -611,7 +619,10 @@
                     }
                 }
             };
-            socket.onclose = () => setTimeout(connectAlerts, 2000);
+            socket.onclose = () => {
+                console.log("Alerts socket closed. Reconnecting...");
+                setTimeout(connectAlerts, 2000);
+            };
         }
 
         function sendSOSSignal(transcript) {
@@ -646,15 +657,17 @@
             const interval = setInterval(() => {
                 const mins = Math.floor(time / 60);
                 const secs = time % 60;
-                timerDisplay.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+                if (timerDisplay) timerDisplay.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
                 if (--time < 0) clearInterval(interval);
             }, 1000);
         }
 
         function showEvacuation(data) {
+            // Restore visibility of main containers (Prevent blanking)
             UI.voice.classList.add('hidden');
             UI.sos.classList.add('hidden');
             UI.undo.classList.add('hidden');
+            UI.evac.classList.replace('hidden', 'flex');
 
             const evacTitle = document.getElementById('evac-title');
             const safetyText = document.getElementById('safety-text');
@@ -662,6 +675,8 @@
             const secUI = document.getElementById('security-status');
             const evacIcon = document.getElementById('evac-icon');
             const safetyBox = document.getElementById('safety-box');
+
+            if (!evacTitle || !safetyText) return;
 
             // Reset dynamic states
             medUI.classList.add('hidden');
@@ -674,7 +689,6 @@
             // 1. Task 1 & 3: Mapping & ETAs
             if (data.case_type === 'MEDICAL_CASE') {
                 evacTitle.textContent = "🚨 MEDICAL EMERGENCY";
-                // Only use fallback if server doesn't provide a guide
                 if (!data.safety_guide || data.safety_guide.includes("Emergency responders are responding")) {
                     data.safety_guide = "Medical team dispatched. Please tell us: What is the patient's condition? (Breathing issue, Injury, or Unconscious?)";
                 }
@@ -702,6 +716,9 @@
                 evacTitle.classList.add('text-yellow-500');
                 evacIcon.style.backgroundColor = themeColor;
                 safetyBox.style.borderLeftColor = themeColor;
+            } else if (data.category === '🚨 MASS EVACUATION') {
+                evacTitle.textContent = "🚨 EVACUATE";
+                evacTitle.classList.add('text-red-600');
             } else {
                 evacTitle.textContent = "🚨 SOS ACTIVE";
                 evacTitle.classList.add('text-red-500');
@@ -711,7 +728,6 @@
             safetyText.innerHTML = `${instructionText}<br><br><span class="text-[10px] font-black uppercase tracking-[0.2em]" style="color: ${themeColor}">${eta}</span>`;
 
             if (UI.status) UI.status.textContent = "Active Response";
-            UI.evac.classList.replace('hidden', 'flex');
 
             renderNavigation(data.category, data.case_type);
 
@@ -732,37 +748,43 @@
                 return;
             }
 
-            // Cancel any current speech
-            window.speechSynthesis.cancel();
+            try {
+                // Cancel any current speech
+                window.speechSynthesis.cancel();
 
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.rate = 0.9; // Slightly slower for clarity
-            utterance.pitch = 1.0;
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.9; // Slightly slower for clarity
+                utterance.pitch = 1.0;
 
-            utterance.onend = () => {
+                utterance.onend = () => {
+                    const audioStatus = document.getElementById('audio-status');
+                    if (audioStatus) audioStatus.classList.add('hidden');
+                    if (callback) callback();
+                };
+
+                utterance.onerror = (event) => {
+                    console.error('SpeechSynthesis error:', event);
+                    const audioStatus = document.getElementById('audio-status');
+                    if (audioStatus) audioStatus.classList.add('hidden');
+                    if (callback) callback();
+                };
+
+                window.speechSynthesis.speak(utterance);
+
+                // Show audio status
                 const audioStatus = document.getElementById('audio-status');
-                if (audioStatus) audioStatus.classList.add('hidden');
+                if (audioStatus) {
+                    audioStatus.classList.remove('hidden');
+                }
+            } catch (e) {
+                console.warn('Audio blocked by browser or SpeechSynthesis crash');
                 if (callback) callback();
-            };
-
-            utterance.onerror = (event) => {
-                console.error('SpeechSynthesis error:', event);
-                const audioStatus = document.getElementById('audio-status');
-                if (audioStatus) audioStatus.classList.add('hidden');
-                if (callback) callback();
-            };
-
-            window.speechSynthesis.speak(utterance);
-
-            // Show audio status
-            const audioStatus = document.getElementById('audio-status');
-            if (audioStatus) {
-                audioStatus.classList.remove('hidden');
             }
         }
 
         function renderNavigation(category, caseType) {
             const canvas = document.getElementById('nav-canvas');
+            if (!canvas) return;
             const ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -791,12 +813,14 @@
         }
 
         function triggerLocalBeacon() {
-            document.getElementById('strobe-layer').classList.replace('hidden', 'strobe-active');
+            const strobe = document.getElementById('strobe-layer');
+            if (strobe) strobe.classList.replace('hidden', 'strobe-active');
             showEvacuation({ category: "OFFLINE SOS", safety_guide: "Network lost. Local beacon active." });
         }
 
         function toggleFirstAid() {
             const guides = document.getElementById('first-aid-guides');
+            if (!guides) return;
             guides.classList.toggle('hidden');
             if (!guides.classList.contains('hidden')) {
                 guides.scrollIntoView({ behavior: 'smooth' });
@@ -805,15 +829,19 @@
 
         function initChat(id) {
             console.log("[CHAT] Initializing for incident:", id);
+            
+            // Fixed loop prevention: Don't re-init if already connected to same ID
+            if (chatSocket && chatSocket.url.includes(`/ws/chat/${id}/`) && chatSocket.readyState === WebSocket.OPEN) {
+                return;
+            }
+
             document.getElementById('chat-widget').classList.remove('hidden');
             
             const protocol = location.protocol === 'https:' ? 'wss://' : 'ws://';
             const chatUrl = `${protocol}${location.host}/ws/chat/${id}/`;
-            console.log("[CHAT] Connecting to:", chatUrl);
-
-            // Prevent WebSocket connection leak
+            
             if (chatSocket) {
-                console.log("[CHAT] Closing existing socket...");
+                chatSocket.onclose = null;
                 chatSocket.close();
             }
             
@@ -823,10 +851,6 @@
             const chatInp = document.getElementById('chat-input');
             const chatSend = document.getElementById('chat-send');
             const chatMic = document.getElementById('chat-mic');
-
-            chatSocket.onopen = () => console.log("[CHAT] WebSocket Connected");
-            chatSocket.onerror = (err) => console.error("[CHAT] WebSocket Error:", err);
-            chatSocket.onclose = () => console.warn("[CHAT] WebSocket Closed");
 
             chatSocket.onmessage = (e) => {
                 const data = JSON.parse(e.data);
@@ -855,37 +879,27 @@
                 p.textContent = data.message;
                 div.appendChild(p);
                 
-                msgBox.appendChild(div);
-                div.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                if (msgBox) {
+                    msgBox.appendChild(div);
+                    div.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                }
                 if (data.is_ai) playAlertAudio(data.message); // AI speaks back
             };
 
             const sendMessage = () => {
-                const text = chatInp.value.trim();
-                console.log("[CHAT] Attempting to send:", text);
-                
+                const text = chatInp ? chatInp.value.trim() : "";
                 if (!text) return;
                 
                 if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
-                    const msg = JSON.stringify({ message: text, sender_id: 'user' });
-                    chatSocket.send(msg);
-                    console.log("[CHAT] Message sent successfully");
-                    chatInp.value = '';
-                    chatInp.focus();
-                } else {
-                    console.error("[CHAT] Cannot send. Socket status:", chatSocket ? chatSocket.readyState : "null");
-                    alert("Connection lost. Re-establishing...");
+                    chatSocket.send(JSON.stringify({ message: text, sender_id: 'user' }));
+                    if (chatInp) { chatInp.value = ''; chatInp.focus(); }
                 }
             };
 
-            chatSend.onclick = (e) => {
-                e.preventDefault();
-                sendMessage();
-            };
+            if (chatSend) chatSend.onclick = (e) => { e.preventDefault(); sendMessage(); };
+            if (chatInp) chatInp.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
 
-            chatInp.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
-
-            // Fix: Web Speech API for Chat Mic
+            // Web Speech API for Chat Mic
             if (chatMic) {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 if (SpeechRecognition) {
@@ -897,13 +911,8 @@
                     let isListening = false; // State flag
 
                     chatMic.onclick = () => {
-                        if (isListening) {
-                            console.log("[MIC] Stopping...");
-                            recognition.stop();
-                        } else {
-                            console.log("[MIC] Activating transcription...");
-                            recognition.start();
-                        }
+                        if (isListening) recognition.stop();
+                        else recognition.start();
                     };
 
                     recognition.onstart = () => {
@@ -913,40 +922,18 @@
 
                     recognition.onresult = (event) => {
                         const transcript = event.results[0][0].transcript;
-                        console.log("[MIC] Text received:", transcript);
-                        
-                        // Explicitly target the input field
-                        chatInp.value = transcript;
-                        
-                        chatInp.focus();
-                        chatInp.scrollIntoView();
+                        if (chatInp) { chatInp.value = transcript; chatInp.focus(); }
                     };
 
-                    recognition.onerror = (err) => {
-                        console.error("[MIC] Error:", err.error);
-                        isListening = false;
-                        chatMic.classList.remove('text-red-500', 'animate-pulse');
-                    };
-                    
                     recognition.onend = () => {
-                        console.log("[MIC] Deactivated");
                         isListening = false;
                         chatMic.classList.remove('text-red-500', 'animate-pulse');
                     };
                 }
             }
-
-            // Task 3: Mobile Keyboard Focus Adjustment
-            chatInp.onfocus = () => {
-                setTimeout(() => {
-                    msgBox.scrollTop = msgBox.scrollHeight;
-                    chatInp.scrollIntoView({ behavior: 'smooth' });
-                }, 300);
-            };
         }
 
         window.sendQuickMessage = (text) => { 
-            console.log("[CHAT] Quick message:", text);
             if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
                 chatSocket.send(JSON.stringify({ message: text, sender_id: 'user' }));
             }
@@ -954,11 +941,8 @@
 
         // --- Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
-            // Register Service Worker
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(() => console.log("RapidResQ SW Active"))
-                    .catch(err => console.error("SW Error:", err));
+                navigator.serviceWorker.register('/sw.js').catch(err => console.error("SW Error:", err));
             }
 
             initSOSMechanism();
@@ -967,14 +951,20 @@
             navigator.geolocation.watchPosition(pos => {
                 currentLat = pos.coords.latitude;
                 currentLng = pos.coords.longitude;
-                document.getElementById('gps-status-indicator').className = 'w-1.5 h-1.5 rounded-full bg-green-500';
+                const gpsInd = document.getElementById('gps-status-indicator');
+                if (gpsInd) gpsInd.className = 'w-1.5 h-1.5 rounded-full bg-green-500';
             });
 
-            document.getElementById('chat-bubble').onclick = () => document.getElementById('chat-window').classList.toggle('hidden');
-            document.getElementById('close-chat').onclick = () => document.getElementById('chat-window').classList.add('hidden');
-            document.getElementById('abort-btn').onclick = () => location.reload();
+            const chatBub = document.getElementById('chat-bubble');
+            const chatWin = document.getElementById('chat-window');
+            const closeChat = document.getElementById('close-chat');
+            const abortBtn = document.getElementById('abort-btn');
 
-            // Fix: FORCE ALERT Button Logic
+            if (chatBub) chatBub.onclick = () => chatWin.classList.toggle('hidden');
+            if (closeChat) closeChat.onclick = () => chatWin.classList.add('hidden');
+            if (abortBtn) abortBtn.onclick = () => location.reload();
+
+            // FORCE ALERT Button Logic
             const forceAlertBtn = document.getElementById('force-alert-btn');
             if (forceAlertBtn) {
                 forceAlertBtn.onclick = () => {
@@ -982,16 +972,14 @@
                     
                     if (socket && socket.readyState === WebSocket.OPEN) {
                         socket.send(JSON.stringify({ 
-                            'type': 'raw_voice_transcript', // Map to standard backend handler
+                            'type': 'raw_voice_transcript',
                             'transcript': 'EMERGENCY: User forced manual alert. Immediate assistance required.',
                             'location': `Lat: ${currentLat.toFixed(5)}, Lng: ${currentLng.toFixed(5)}`
                         }));
                     } else {
-                        // Fallback alert UI immediately if socket is down
                         fallbackToManualDispatch("User Forced Alert (Offline)");
                     }
                     
-                    // Force the UI to transition
                     showEvacuation({
                         category: "🚨 MANUAL ALERT",
                         case_type: "GENERAL_CASE",
