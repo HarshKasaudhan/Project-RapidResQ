@@ -162,7 +162,7 @@
                 RapidResQ AI Listening...</p>
 
             <!-- Force Alert Button -->
-            <button onclick="triggerFallbackAlert('User Forced Alert')"
+            <button id="force-alert-btn"
                 class="mt-8 text-[9px] font-black text-gray-500 hover:text-white uppercase tracking-[0.2em] border border-white/10 px-6 py-3 rounded-xl transition-all">
                 Taking too long? Force Alert
             </button>
@@ -370,6 +370,7 @@
         let currentLat = 0, currentLng = 0;
         let analysisTimeout = null;
         let isOffline = !navigator.onLine;
+        let recognition = null; // Global recognition instance
 
         // --- FEATURE 1: Offline Sync (IndexedDB) ---
         const DB_NAME = 'SOSQueueDB';
@@ -483,7 +484,7 @@
                 return;
             }
 
-            const recognition = new SpeechRecognition();
+            recognition = new SpeechRecognition();
             recognition.lang = 'en-US';
             recognition.interimResults = false;
             recognition.maxAlternatives = 1;
@@ -821,7 +822,8 @@
                     // Update the main instruction block dynamically
                     const safetyText = document.getElementById('safety-text');
                     if (safetyText) {
-                        safetyText.textContent = data.message;
+                        const instructionText = data.actionable_guidance || data.guidance || data.instructions || data.message || "Emergency responders are on the way.";
+                        safetyText.innerText = instructionText;
                     }
                 } else {
                     div.className = "bg-white/10 text-white p-3 rounded-2xl rounded-tl-none mr-auto max-w-[85%] border border-white/5";
@@ -951,6 +953,33 @@
             document.getElementById('chat-bubble').onclick = () => document.getElementById('chat-window').classList.toggle('hidden');
             document.getElementById('close-chat').onclick = () => document.getElementById('chat-window').classList.add('hidden');
             document.getElementById('abort-btn').onclick = () => location.reload();
+
+            // Fix: FORCE ALERT Button Logic
+            const forceAlertBtn = document.getElementById('force-alert-btn');
+            if (forceAlertBtn) {
+                forceAlertBtn.onclick = () => {
+                    if (recognition) recognition.stop();
+                    
+                    if (socket && socket.readyState === WebSocket.OPEN) {
+                        socket.send(JSON.stringify({ 
+                            'type': 'raw_voice_transcript', // Map to standard backend handler
+                            'transcript': 'EMERGENCY: User forced manual alert. Immediate assistance required.',
+                            'location': `Lat: ${currentLat.toFixed(5)}, Lng: ${currentLng.toFixed(5)}`
+                        }));
+                    } else {
+                        // Fallback alert UI immediately if socket is down
+                        fallbackToManualDispatch("User Forced Alert (Offline)");
+                    }
+                    
+                    // Force the UI to transition
+                    showEvacuation({
+                        category: "🚨 MANUAL ALERT",
+                        case_type: "GENERAL_CASE",
+                        safety_guide: "Manual SOS triggered. Responders alerted. Remain in a safe location.",
+                        voice_message: "Manual emergency alert activated."
+                    });
+                };
+            }
         });
     </script>
 </body>
