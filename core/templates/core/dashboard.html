@@ -74,8 +74,6 @@
         <section class="flex flex-col gap-6 h-full">
             <div class="panel p-6">
                 <h2 class="text-[10px] font-bold text-[#02DEE5] uppercase tracking-[0.2em] mb-6">Dispatch Intelligence</h2>
-                <button id="ai-voice-btn" class="w-full btn-primary py-3 rounded-lg text-[11px] mb-6 uppercase tracking-widest flex items-center justify-center gap-3">🎙️ Voice Command</button>
-                <div class="bg-black/50 border border-white/5 rounded-lg p-4 h-24 overflow-y-auto font-mono text-[10px] text-gray-500 mb-6" id="ai-transcript">System Ready.</div>
                 <h3 class="text-[10px] font-bold text-[#1F76F3] uppercase tracking-widest mb-4">Nearest Responders</h3>
                 <div id="nearest-staff-container" class="space-y-2"></div>
             </div>
@@ -204,8 +202,15 @@
                 const data = JSON.parse(e.data);
                 if (data.staff_update) {
                     const s = data.staff_update;
-                    if (staffMarkers[s.id]) staffMarkers[s.id].setLatLng([s.lat, s.lng]);
-                    else staffMarkers[s.id] = L.marker([s.lat, s.lng], {icon: createStaffIcon(s.name)}).addTo(map);
+                    const newLatLng = L.latLng(s.lat, s.lng);
+                    if (staffMarkers[s.id]) {
+                        // Stabilize marker: only update if distance > 15m
+                        if (map.distance(staffMarkers[s.id].getLatLng(), newLatLng) > 15) {
+                            staffMarkers[s.id].setLatLng(newLatLng);
+                        }
+                    } else {
+                        staffMarkers[s.id] = L.marker(newLatLng, {icon: createStaffIcon(s.name)}).addTo(map);
+                    }
                     updateCrowdHeatmap(); return;
                 }
 
