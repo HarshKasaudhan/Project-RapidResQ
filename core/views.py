@@ -373,7 +373,7 @@ def staff_portal(request):
         'staff': staff,
         'venue': staff.venue
     }
-    return render(request, 'core/staff_app.html', context)
+    return render(request, 'core/staff_portal.html', context)
 
 def db_health_check(request):
     try:

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Staff Tactical Portal | RapidResQ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-black: #080808;
+            --primary-cyan: #02DEE5;
+            --secondary-blue: #1F76F3;
+            --danger-red: #dc2626;
+        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--bg-black); color: #fff; overflow-x: hidden; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .glass-panel { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .active-deployment { border-top: 4px solid var(--danger-red); background: rgba(220, 38, 38, 0.05); }
+        .status-badge-active { background: var(--danger-red); animation: pulse-red 2s infinite; }
+        @keyframes pulse-red { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        #staff-map { height: 200px; border-radius: 12px; margin-bottom: 1rem; border: 1px solid rgba(255,255,255,0.1); }
+        .map-layer { filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(85%); }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <header id="main-header" class="w-full p-4 border-b border-white/5 flex justify-between items-center sticky top-0 z-10 bg-black/50 backdrop-blur-md transition-colors duration-500">
+        <div class="flex items-center gap-3">
+            <div id="deployment-indicator" class="w-2 h-2 rounded-full bg-emerald-500"></div>
+            <div>
+                <h1 id="unit-label" class="text-[8px] font-black tracking-[0.3em] text-gray-500 uppercase">Unit Standby</h1>
+                <p class="text-xs font-bold text-white">{{ staff.name }}</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-4">
+            <span id="status-text" class="text-[8px] font-bold text-gray-500 uppercase tracking-widest">Available</span>
+            <a href="{% url 'home' %}" class="text-[8px] font-black text-gray-500 hover:text-white uppercase tracking-widest border border-white/10 px-3 py-1.5 rounded-lg">Exit</a>
+        </div>
+    </header>
+
+    <main class="flex-grow p-4 space-y-4 max-w-md mx-auto w-full">
+        
+        <!-- Incident Briefing (Hidden by default) -->
+        <div id="incident-briefing" class="hidden glass-panel p-5 rounded-2xl border-red-500/20 active-deployment">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h2 id="brief-category" class="text-xl font-black text-red-500 uppercase leading-none mb-1">Emergency</h2>
+                    <p id="brief-location" class="text-[10px] font-mono text-gray-400">---</p>
+                </div>
+                <div class="bg-red-500 text-black text-[8px] font-black px-2 py-1 rounded uppercase tracking-tighter">Priority 1</div>
+            </div>
+            
+            <div id="staff-map"></div>
+            
+            <div class="grid grid-cols-2 gap-2 mb-4">
+                <button id="nav-btn" class="bg-white/10 hover:bg-white/20 text-white py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" stroke-width="2"></path><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2"></path></svg>
+                    Navigate
+                </button>
+                <button id="arrived-btn" class="bg-amber-500 text-black py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-transform active:scale-95 shadow-lg shadow-amber-500/20">
+                    Arrived
+                </button>
+            </div>
+
+            <button id="verify-btn" class="hidden w-full bg-emerald-500 text-black py-4 rounded-xl text-[10px] font-black uppercase tracking-widest animate-pulse mb-2">
+                Verify & Close Incident
+            </button>
+        </div>
+
+        <!-- Standby View -->
+        <div id="standby-view" class="glass-panel p-10 rounded-2xl text-center">
+            <div class="w-16 h-16 bg-[#02DEE5]/10 rounded-full flex items-center justify-center mx-auto mb-6"><div class="w-2 h-2 bg-[#02DEE5] rounded-full animate-ping"></div></div>
+            <h2 class="text-xl font-bold tracking-normal mb-1">Awaiting Orders</h2>
+            <p class="text-gray-500 text-[10px] uppercase tracking-widest mb-6">Telemetry Synchronized</p>
+            <div class="bg-black/40 border border-white/5 p-4 rounded-xl text-left font-mono">
+                <div class="text-[8px] uppercase font-bold text-gray-600 mb-2 tracking-widest">GPS Status</div>
+                <div class="text-[9px] text-[#02DEE5] leading-relaxed" id="gps-status">Syncing Coordinates...</div>
+            </div>
+        </div>
+
+        <!-- Tactical Comms -->
+        <div class="glass-panel rounded-2xl flex flex-col h-72 overflow-hidden">
+            <div class="p-3 border-b border-white/5 bg-black/40 flex justify-between items-center">
+                <h3 class="text-[9px] font-black text-[#1F76F3] uppercase tracking-[0.2em]">Tactical Channel</h3>
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            </div>
+            <div id="staff-chat-messages" class="flex-grow p-4 overflow-y-auto space-y-3 text-[10px] scrollbar-hide">
+                <div class="text-gray-600 text-center uppercase tracking-[0.2em] text-[7px] py-4">Operational sync active</div>
+            </div>
+            <div class="p-3 border-t border-white/5 flex gap-2">
+                <input type="text" id="staff-chat-input" class="flex-grow bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-[#1F76F3]" placeholder="Update Command...">
+                <button id="staff-chat-send" class="bg-[#1F76F3] text-white px-4 py-2 rounded-xl font-black text-[9px] uppercase transition-transform active:scale-95">Send</button>
+            </div>
+        </div>
+    </main>
+
+    {{ venue.id|json_script:"venue-id" }}
+    {{ staff.id|json_script:"staff-id" }}
+
+    <script>
+        let map, victimMarker;
+        let staffLat = 0, staffLng = 0;
+        let currentActiveIncidentId = null;
+        const staffName = "{{ staff.name }}";
+        const venueId = JSON.parse(document.getElementById('venue-id').textContent);
+        const staffId = JSON.parse(document.getElementById('staff-id').textContent);
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+        function initMap() {
+            map = L.map('staff-map', {zoomControl: false, attributionControl: false}).setView([30.7699, 76.5756], 15);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { className: 'map-layer', maxZoom: 20 }).addTo(map);
+        }
+
+        function triggerDeployment(data) {
+            currentActiveIncidentId = data.incident_id;
+            document.getElementById('standby-view').classList.add('hidden');
+            document.getElementById('incident-briefing').classList.remove('hidden');
+            
+            document.getElementById('main-header').classList.add('bg-red-950');
+            document.getElementById('deployment-indicator').className = 'w-2 h-2 rounded-full status-badge-active';
+            document.getElementById('unit-label').textContent = 'Active Deployment';
+            document.getElementById('unit-label').classList.replace('text-gray-500', 'text-red-500');
+            
+            document.getElementById('brief-category').textContent = data.category;
+            document.getElementById('brief-location').textContent = data.location;
+            
+            if (!map) initMap();
+            const vLat = parseFloat(data.lat);
+            const vLng = parseFloat(data.lng);
+            
+            if (victimMarker) map.removeLayer(victimMarker);
+            victimMarker = L.marker([vLat, vLng], {
+                icon: L.divIcon({className: 'bg-red-600 w-4 h-4 rounded-full border-2 border-white animate-ping'})
+            }).addTo(map);
+            map.setView([vLat, vLng], 17);
+
+            document.getElementById('nav-btn').onclick = () => {
+                const url = `https://www.google.com/maps/dir/?api=1&origin=${staffLat},${staffLng}&destination=${vLat},${vLng}&travelmode=walking`;
+                window.open(url, '_blank');
+            };
+
+            if (navigator.vibrate) navigator.vibrate([500, 200, 500]);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Geolocation Tracking
+            if ("geolocation" in navigator) {
+                navigator.geolocation.watchPosition(pos => {
+                    staffLat = pos.coords.latitude; staffLng = pos.coords.longitude;
+                    document.getElementById('gps-status').textContent = `LAT: ${staffLat.toFixed(6)}\nLNG: ${staffLng.toFixed(6)}\nACC: ±${Math.round(pos.coords.accuracy)}m`;
+                    
+                    if (pos.coords.accuracy < 50) {
+                        fetch('', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }, body: JSON.stringify({ lat: staffLat, lng: staffLng }) });
+                        if (socket && socket.readyState === WebSocket.OPEN) {
+                            socket.send(JSON.stringify({ type: 'staff_location', staff_id: staffId, venue_id: venueId, lat: staffLat, lng: staffLng, name: staffName }));
+                        }
+                    }
+                }, null, { enableHighAccuracy: true });
+            }
+
+            const socketUrl = `${window.location.protocol === 'https:' ? 'wss://' : 'ws://'}${window.location.host}/ws/alerts/?venue_id=${venueId}`;
+            const socket = new WebSocket(socketUrl);
+
+            socket.onmessage = e => {
+                const data = JSON.parse(e.data);
+                
+                // Dispatch or New Incident Alert
+                if (data.type === 'dispatch_alert' || data.type === 'global_emergency_alert' || data.alert) {
+                    const payload = data.alert || data;
+                    if (payload.incident_id) triggerDeployment(payload);
+                }
+
+                // Tactical Chat Sync
+                if (data.type === 'staff_chat_broadcast') {
+                    appendChatMessage(data.staff_name, data.message, data.staff_id == staffId || data.staff_id == 'admin');
+                }
+
+                // Peer Resolution
+                if (data.type === 'incident_resolved' && data.incident_id == currentActiveIncidentId) {
+                    location.reload();
+                }
+            };
+
+            // Responder Arrived
+            document.getElementById('arrived-btn').onclick = () => {
+                if (currentActiveIncidentId && socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify({ type: 'incident_resolving', incident_id: currentActiveIncidentId, staff_name: staffName }));
+                    document.getElementById('arrived-btn').classList.add('hidden');
+                    document.getElementById('verify-btn').classList.remove('hidden');
+                }
+            };
+
+            // Verify Rescue
+            document.getElementById('verify-btn').onclick = () => {
+                if (currentActiveIncidentId && socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify({ type: 'rescue_verified', incident_id: currentActiveIncidentId }));
+                    location.reload();
+                }
+            };
+
+            // Chat Logic
+            const chatInput = document.getElementById('staff-chat-input');
+            const chatSend = document.getElementById('staff-chat-send');
+            const chatMessages = document.getElementById('staff-chat-messages');
+
+            function appendChatMessage(name, msg, isRelevant) {
+                const div = document.createElement('div');
+                const isMe = name === staffName;
+                div.className = isMe ? "ml-auto bg-[#1F76F3] text-white p-3 rounded-2xl rounded-tr-none max-w-[85%] font-bold" : "mr-auto bg-white/10 text-white p-3 rounded-2xl rounded-tl-none max-w-[85%]";
+                div.innerHTML = `<p class="text-[7px] uppercase opacity-50 mb-1">${name}</p><p>${msg}</p>`;
+                chatMessages.appendChild(div);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            chatSend.onclick = () => {
+                const msg = chatInput.value.trim();
+                if (msg && socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify({ type: 'staff_command_chat', venue_id: venueId, staff_id: staffId, staff_name: staffName, message: msg }));
+                    chatInput.value = '';
+                }
+            };
+            chatInput.onkeypress = (e) => { if (e.key === 'Enter') chatSend.click(); };
+        });
+    </script>
+</body>
+</html>

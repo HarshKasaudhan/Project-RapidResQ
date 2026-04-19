@@ -406,6 +406,16 @@ class GlobalAlertConsumer(AsyncWebsocketConsumer):
 
             # --- NEW: Staff -> Command Tactical Chat ---
             if data.get('type') == 'staff_command_chat':
+                target_group = f"venue_{data['venue_id']}"
+                await self.channel_layer.group_send(
+                    target_group,
+                    {
+                        'type': 'staff_chat_broadcast',
+                        'message': data['message'],
+                        'staff_name': data['staff_name'],
+                        'staff_id': data['staff_id']
+                    }
+                )
                 await self.channel_layer.group_send(
                     'command_dashboard',
                     {
@@ -413,6 +423,22 @@ class GlobalAlertConsumer(AsyncWebsocketConsumer):
                         'message': data['message'],
                         'staff_name': data['staff_name'],
                         'staff_id': data['staff_id']
+                    }
+                )
+                return
+
+            # --- NEW: Admin -> Staff Dispatch ---
+            if data.get('type') == 'staff_dispatch':
+                venue_id = data.get('venue_id')
+                await self.channel_layer.group_send(
+                    f"venue_{venue_id}",
+                    {
+                        'type': 'dispatch_alert',
+                        'incident_id': data.get('incident_id'),
+                        'category': data.get('category'),
+                        'location': data.get('location'),
+                        'lat': data.get('lat'),
+                        'lng': data.get('lng')
                     }
                 )
                 return
@@ -633,6 +659,16 @@ class GlobalAlertConsumer(AsyncWebsocketConsumer):
             'incident_id': event['incident_id'],
             'eta': event['eta'],
             'role': event['role']
+        }))
+
+    async def dispatch_alert(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'dispatch_alert',
+            'incident_id': event['incident_id'],
+            'category': event['category'],
+            'location': event['location'],
+            'lat': event['lat'],
+            'lng': event['lng']
         }))
 
     async def incident_resolution_broadcast(self, event):
