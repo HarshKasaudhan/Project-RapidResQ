@@ -363,6 +363,26 @@
                     logAudit(`[CHAT] #${chatData.incident_id}: ${chatData.sender_id}: ${chatData.message}`); return;
                 }
 
+                if (data.type === 'incident_verified_broadcast') {
+                    const card = document.getElementById(`incident-card-${data.incident_id}`);
+                    if (card) {
+                        const pill = card.querySelector('.status-pill');
+                        if (pill) {
+                            if (data.status === 'confirmed') {
+                                pill.textContent = 'VERIFIED: REAL';
+                                pill.className = 'status-pill bg-emerald-500/20 text-emerald-500 text-[8px] px-2 py-0.5 rounded uppercase font-black';
+                                logAudit(`[VERIFIED] Incident #${data.incident_id} confirmed as REAL by Staff.`);
+                            } else {
+                                pill.textContent = 'CLOSED: FAKE';
+                                pill.className = 'status-pill bg-orange-500/20 text-orange-500 text-[8px] px-2 py-0.5 rounded uppercase font-black';
+                                card.classList.add('opacity-50', 'grayscale');
+                                logAudit(`[REPORT] Incident #${data.incident_id} reported as FALSE ALARM/FAKE.`);
+                            }
+                        }
+                    }
+                    return;
+                }
+
                 if (data.type === 'incident_status_update') {
                     const card = document.getElementById(`incident-card-${data.incident_id}`);
                     if (card) {

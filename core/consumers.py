@@ -610,6 +610,32 @@ class GlobalAlertConsumer(AsyncWebsocketConsumer):
                     alert_type = "🚨 GENERAL"
                     severity = "CRITICAL"
                     description = transcript
+            elif data.get('type') == 'incident_verified':
+                incident_id = data.get('incident_id')
+                status = data.get('status') # 'confirmed' or 'fake'
+                
+                # Update Admin Dashboard
+                await self.channel_layer.group_send(
+                    'command_dashboard',
+                    {
+                        'type': 'incident_verified_broadcast',
+                        'incident_id': incident_id,
+                        'status': status
+                    }
+                )
+                
+                # If fake, resolve it immediately. If confirmed, just update status.
+                if status == 'fake':
+                    if await resolve_incident_in_db(incident_id):
+                        await self.channel_layer.group_send(
+                            'command_dashboard',
+                            {
+                                'type': 'incident_resolution_broadcast',
+                                'incident_id': incident_id
+                            }
+                        )
+                return
+
             elif data.get('type') == 'rescue_verified':
                 incident_id = data.get('incident_id')
                 if await resolve_incident_in_db(incident_id):
