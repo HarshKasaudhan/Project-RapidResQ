@@ -7,6 +7,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>RapidResQ SOS</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
     <style>
@@ -228,21 +230,33 @@
                     are being signaled via physical SOS protocols.</p>
             </div>
 
-            <!-- Floor Plan Map -->
-            <div class="w-full glass-panel p-6 rounded-3xl mb-8 text-left relative">
+            <!-- Floor Plan Map Section -->
+            <div id="exit-map-container" class="w-full glass-panel p-6 rounded-3xl mb-8 text-left relative hidden">
                 <h3 class="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-4" id="nav-title">Tactical
                     Exit Route</h3>
                 <div class="w-full aspect-square bg-black rounded-2xl overflow-hidden border border-white/5 relative">
-                    <img src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80"
-                        class="absolute inset-0 w-full h-full object-cover opacity-30 grayscale contrast-125 pointer-events-none">
-                    <canvas id="nav-canvas" width="300" height="300"
-                        class="absolute inset-0 w-full h-full z-10"></canvas>
+                    <div id="exit-map" class="absolute inset-0 w-full h-full z-10"></div>
                 </div>
                 <div id="audio-alert-container" class="mt-4 text-center">
                     <p id="audio-status"
                         class="text-[10px] font-bold text-[#02DEE5] uppercase tracking-widest animate-pulse hidden">🔊
                         Playing Alert Audio...</p>
                 </div>
+            </div>
+
+            <!-- PROACTIVE GUIDANCE Section (Fallback for non-tactical emergencies) -->
+            <div id="proactive-guidance" class="hidden w-full glass-panel p-8 rounded-3xl border-[#02DEE5]/20 flex-col items-center mb-8 text-center">
+                <div id="guidance-icon" class="w-24 h-24 bg-[#02DEE5]/10 rounded-full flex items-center justify-center mb-6 border border-[#02DEE5]/20">
+                    <!-- Icon will be injected by JS -->
+                </div>
+                <h3 class="text-xs font-black text-[#02DEE5] uppercase tracking-[0.2em] mb-4">Proactive Guidance</h3>
+                <p id="guidance-text" class="text-lg font-bold text-white leading-tight mb-4">
+                    Stay calm. Follow the instructions below.
+                </p>
+                <div class="w-full h-px bg-white/5 mb-4"></div>
+                <p id="guidance-subtext" class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+                    AI Analysis in Progress
+                </p>
             </div>
 
             <!-- Task 2: Local Chat Templates (Bottom) -->
@@ -666,6 +680,37 @@
             }, 1000);
         }
 
+        let leafletMap = null;
+        let userMarker = null;
+
+        function initLeafletMap(lat, lng) {
+            if (leafletMap) {
+                leafletMap.setView([lat, lng], 17);
+                if (userMarker) userMarker.setLatLng([lat, lng]);
+                return;
+            }
+
+            leafletMap = L.map('exit-map', {
+                zoomControl: false,
+                attributionControl: false
+            }).setView([lat, lng], 17);
+
+            // Blueprint / Technical Style Tile Layer
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                maxZoom: 20,
+                className: 'blueprint-tiles'
+            }).addTo(leafletMap);
+
+            userMarker = L.circleMarker([lat, lng], {
+                radius: 8,
+                fillColor: "#02DEE5",
+                color: "#fff",
+                weight: 2,
+                opacity: 1,
+                fillOpacity: 0.8
+            }).addTo(leafletMap).bindTooltip("YOU", { permanent: true, direction: 'top' });
+        }
+
         function showEvacuation(data) {
             // Restore visibility of main containers (Prevent blanking)
             UI.voice.classList.add('hidden');
@@ -679,6 +724,8 @@
             const secUI = document.getElementById('security-status');
             const evacIcon = document.getElementById('evac-icon');
             const safetyBox = document.getElementById('safety-box');
+            const mapContainer = document.getElementById('exit-map-container');
+            const guidanceBlock = document.getElementById('proactive-guidance');
 
             if (!evacTitle || !safetyText) return;
 
@@ -689,6 +736,7 @@
 
             let eta = "Calculating...";
             let themeColor = "#ef4444"; // Default Red
+            const category = (data.category || data.case_type || "").toUpperCase();
 
             // 1. Task 1 & 3: Mapping & ETAs
             if (data.case_type === 'MEDICAL_CASE') {
@@ -720,12 +768,42 @@
                 evacTitle.classList.add('text-yellow-500');
                 evacIcon.style.backgroundColor = themeColor;
                 safetyBox.style.borderLeftColor = themeColor;
-            } else if (data.category === '🚨 MASS EVACUATION') {
+            } else if (category.includes('MASS EVACUATION')) {
                 evacTitle.textContent = "🚨 EVACUATE";
                 evacTitle.classList.add('text-red-600');
             } else {
                 evacTitle.textContent = "🚨 SOS ACTIVE";
                 evacTitle.classList.add('text-red-500');
+            }
+
+            // --- SMART CONDITIONAL DISPLAY LOGIC ---
+            const needsTacticalMap = category.includes('FIRE') || category.includes('SECURITY') || category.includes('CRITICAL') || category.includes('EVACUATION');
+            
+            if (needsTacticalMap) {
+                mapContainer.classList.remove('hidden');
+                guidanceBlock.classList.add('hidden');
+                setTimeout(() => {
+                    initLeafletMap(currentLat || 30.7699, currentLng || 76.5756);
+                    renderNavigation(data.category, data.case_type);
+                }, 100);
+            } else {
+                mapContainer.classList.add('hidden');
+                guidanceBlock.classList.replace('hidden', 'flex');
+                
+                // Inject Guidance UI
+                const guidanceIcon = document.getElementById('guidance-icon');
+                const guidanceText = document.getElementById('guidance-text');
+                const guidanceSub = document.getElementById('guidance-subtext');
+                
+                if (data.case_type === 'MEDICAL_CASE') {
+                    guidanceIcon.innerHTML = `<svg class="w-12 h-12 text-[#1F76F3]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>`;
+                    guidanceText.textContent = "Medical Help is En Route";
+                    guidanceSub.textContent = "Keep the patient still and warm.";
+                } else {
+                    guidanceIcon.innerHTML = `<svg class="w-12 h-12 text-[#02DEE5]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+                    guidanceText.textContent = "Immediate Response Active";
+                    guidanceSub.textContent = "Responders are navigating to your GPS.";
+                }
             }
 
             // Fix AI Parsing Error: Strictly bind AI instruction text to correct payload keys
@@ -734,8 +812,6 @@
             safetyText.innerHTML += `<br><br><span class="text-[10px] font-black uppercase tracking-[0.2em]" style="color: ${themeColor}">${eta}</span>`;
 
             if (UI.status) UI.status.textContent = "Active Response";
-
-            renderNavigation(data.category, data.case_type);
 
             // 4. Voice Sync with exact instruction
             playAlertAudio(instructionText, () => {
@@ -790,33 +866,40 @@
         }
 
         function renderNavigation(category, caseType) {
-            const canvas = document.getElementById('nav-canvas');
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (!leafletMap) return;
 
-            // Draw Basic Route
-            ctx.strokeStyle = '#02DEE5'; ctx.lineWidth = 5; ctx.beginPath();
-            ctx.setLineDash([10, 5]); ctx.moveTo(50, 50); ctx.lineTo(250, 250); ctx.stroke();
-            ctx.setLineDash([]);
+            // Clear existing layers except base map and user marker
+            leafletMap.eachLayer((layer) => {
+                if (layer !== userMarker && layer instanceof L.Path) {
+                    leafletMap.removeLayer(layer);
+                }
+            });
 
-            // YOU Marker
-            ctx.fillStyle = '#1F76F3'; ctx.beginPath(); ctx.arc(50, 50, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = 'white'; ctx.font = 'bold 8px sans-serif'; ctx.fillText('YOU', 42, 40);
+            // Draw a technical "Blueprint" route
+            const lat = currentLat || 30.7699;
+            const lng = currentLng || 76.5756;
+            
+            const exitLat = lat + 0.002;
+            const exitLng = lng + 0.002;
 
-            // Case-Specific EXIT Marker
-            if (caseType === 'SECURITY_CASE') {
-                // Police Marker
-                ctx.fillStyle = '#1F76F3'; ctx.beginPath(); ctx.arc(200, 100, 10, 0, Math.PI * 2); ctx.fill();
-                ctx.strokeStyle = 'white'; ctx.lineWidth = 2; ctx.stroke();
-                ctx.fillStyle = 'white'; ctx.fillText('POLICE', 185, 85);
-            }
+            const route = L.polyline([[lat, lng], [exitLat, exitLng]], {
+                color: '#02DEE5',
+                weight: 4,
+                dashArray: '10, 10',
+                opacity: 0.8
+            }).addTo(leafletMap);
 
-            const exitColor = (caseType === 'MEDICAL_CASE') ? '#10b981' : '#ef4444';
             const exitLabel = (caseType === 'MEDICAL_CASE') ? 'MED-BAY' : 'EXIT';
+            const exitIcon = L.divIcon({
+                className: 'custom-div-icon',
+                html: `<div class="w-6 h-6 rounded-full bg-red-600 border-2 border-white flex items-center justify-center shadow-lg animate-pulse"><span class="text-[8px] font-black text-white">${exitLabel}</span></div>`,
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+            });
 
-            ctx.fillStyle = exitColor; ctx.beginPath(); ctx.arc(250, 250, 12, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = 'white'; ctx.fillText(exitLabel, 235, 235);
+            L.marker([exitLat, exitLng], { icon: exitIcon }).addTo(leafletMap);
+            
+            leafletMap.fitBounds(route.getBounds(), { padding: [50, 50] });
         }
 
         function triggerLocalBeacon() {
