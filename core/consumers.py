@@ -261,18 +261,22 @@ def analyze_with_gemini(transcript):
         category = "🚨 GENERAL"
         instruction = "Emergency dispatched. Help is on the way."
         
-        if any(k in t for k in ["fire", "smoke", "aag", "dhua"]):
+        if any(k in t for k in ["fire", "smoke", "aag", "dhua", "aag lag gayi", "dhuaan", "explosion", "blast", "burning smell", "gas leak", "LPG leak", "cylinder blast", "building on fire", "trapped in fire", "fire spreading", "short circuit", "help fire brigade"]):
             case_type = "FIRE_CASE"
             category = "🔥 FIRE"
             instruction = "Fire protocol initiated. Follow the cyan route and stay low."
-        elif any(k in t for k in ["pain", "accident", "blood", "breathing", "chot", "khoon", "heart"]):
+        elif any(k in t for k in ["pain", "accident", "blood", "breathing", "chot", "khoon", "heart", "help", "urgent help", "emergency", "unconscious", "behosh", "not breathing", "saans nahi aa rahi", "chest pain", "heart attack", "bleeding", "heavy bleeding", "khoon bah raha hai", "injured", "serious injury", "fainted", "collapse", "seizure", "fits", "high fever", "vomiting", "diarrhea", "burn", "electric shock", "poison", "overdose", "pregnant emergency", "labor pain", "ambulance", "hospital le jao", "critical condition"]):
             case_type = "MEDICAL_CASE"
             category = "⚕️ MEDICAL"
             instruction = "Medical alert active. What specific help do you need?"
-        elif any(k in t for k in ["attack", "fight", "thief", "help", "chori", "ladai"]):
+        elif any(k in t for k in ["attack", "fight", "thief", "help", "chori", "ladai", "help police", "call police", "robbery", "loot", "theft", "assault", "kidnapping", "gun", "weapon", "knife", "danger", "threat", "पीछा कर रहा है", "being followed", "break-in", "ghus gaya", "suspicious person", "harassment", "emergency danger"]):
             case_type = "SECURITY_CASE"
             category = "🛡️ SECURITY"
             instruction = "Police and Security are on the way. Find a safe spot."
+        elif any(k in t for k in ["urgent help", "save me", "emergency situation", "need help immediately", "critical", "danger", "please help fast", "SOS", "bachao", "jaldi aao"]):
+            case_type = "GENERAL_CASE"
+            category = "🚨 GENERAL"
+            instruction = "Emergency dispatched. Help is on the way."
 
         return {
             "case_type": case_type,
