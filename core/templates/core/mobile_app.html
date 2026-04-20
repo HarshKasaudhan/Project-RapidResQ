@@ -80,6 +80,15 @@
             color: black;
             transform: scale(0.95);
         }
+
+        @keyframes etaPulse {
+            0% { transform: scale(1); text-shadow: 0 0 0px var(--primary-cyan); }
+            50% { transform: scale(1.1); text-shadow: 0 0 20px var(--primary-cyan); }
+            100% { transform: scale(1); text-shadow: 0 0 0px var(--primary-cyan); }
+        }
+        .eta-pulse {
+            animation: etaPulse 1s ease-in-out 3;
+        }
     </style>
 </head>
 
@@ -198,7 +207,7 @@
                         Active</p>
                     <div class="flex items-center justify-between bg-black/40 p-3 rounded-lg border border-white/5">
                         <span class="text-[10px] font-bold text-gray-400 uppercase">Estimated Arrival</span>
-                        <span id="ambulance-timer"
+                        <span id="ambulance-timer" id="eta-display"
                             class="text-lg font-black text-emerald-500 tracking-normal">10:00</span>
                     </div>
                 </div>
@@ -945,6 +954,19 @@
             chatSocket.onmessage = (e) => {
                 const data = JSON.parse(e.data);
                 console.log("WebSocket Payload (Chat):", data);
+
+                // --- SYNC BUG FIX: Update ETA Dynamically ---
+                if (data.type === 'eta_update') {
+                    const etaDisplay = document.getElementById('eta-display');
+                    if (etaDisplay) {
+                        etaDisplay.innerText = "Arriving in: " + data.eta + " mins";
+                        etaDisplay.classList.remove('eta-pulse');
+                        void etaDisplay.offsetWidth; // Trigger reflow
+                        etaDisplay.classList.add('eta-pulse');
+                    }
+                    return;
+                }
+
                 const div = document.createElement('div');
                 
                 if (data.sender_id === 'user') {

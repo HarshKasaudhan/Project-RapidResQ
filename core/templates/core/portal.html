@@ -91,12 +91,21 @@
             if (!eta) { alert("Please enter a valid ETA."); return; }
 
             if (socket && socket.readyState === WebSocket.OPEN) {
+                // BROADCAST 1: Official Channel (Existing Logic)
                 socket.send(JSON.stringify({
                     type: 'authority_dispatch',
                     incident_id: incidentId,
                     eta: eta,
                     role: role
                 }));
+
+                // BROADCAST 2: Victim Channel (Sync Bug Fix)
+                socket.send(JSON.stringify({
+                    type: 'eta_update',
+                    eta: eta,
+                    incident_id: incidentId
+                }));
+
                 btn.textContent = "DISPATCHED"; btn.disabled = true;
                 btn.className = "flex-grow bg-white/10 text-gray-500 text-[9px] font-black uppercase tracking-widest py-1.5 rounded-lg cursor-not-allowed";
                 etaInput.disabled = true;

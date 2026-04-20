@@ -540,6 +540,21 @@ class GlobalAlertConsumer(AsyncWebsocketConsumer):
                 )
                 return
 
+            # --- SYNC BUG FIX: ETA Update Routing ---
+            if data.get('type') == 'eta_update':
+                incident_id = data.get('incident_id')
+                eta = data.get('eta')
+                
+                # Broadcast specifically to the victim's group
+                await self.channel_layer.group_send(
+                    f'incident_chat_{incident_id}',
+                    {
+                        'type': 'eta_update',
+                        'eta': eta
+                    }
+                )
+                return
+
             # Handle SOS Alerts
             try:
                 query_string = self.scope.get('query_string', b'').decode('utf-8')
