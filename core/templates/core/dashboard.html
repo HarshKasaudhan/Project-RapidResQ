@@ -129,6 +129,7 @@
                 </div>
                 <div class="flex gap-3 pt-2">
                     <button onclick="closeDispatchModal()" class="flex-1 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest hover:text-white transition-colors">Cancel</button>
+                    <button id="dispatch-staff-btn" onclick="dispatchGroundStaff()" class="flex-[2] bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-600/20 transition-all">DISPATCH GROUND STAFF</button>
                     <button onclick="confirmManualDispatch()" class="flex-[2] btn-primary py-3 rounded-xl text-[10px] uppercase tracking-widest shadow-lg shadow-[#02DEE5]/20">Confirm Dispatch</button>
                 </div>
             </div>
@@ -145,6 +146,39 @@
         let currentIncidentId = null;
         let mainSocket = null;
         let modalActiveIncident = null;
+
+        function dispatchGroundStaff() {
+            if (!modalActiveIncident) return;
+            
+            const latMatch = (modalActiveIncident.loc || "").match(/Lat:\s*([0-9.-]+)/i);
+            const lngMatch = (modalActiveIncident.loc || "").match(/Lng:\s*([0-9.-]+)/i);
+            const victimLat = latMatch ? parseFloat(latMatch[1]) : 0;
+            const victimLng = lngMatch ? parseFloat(lngMatch[1]) : 0;
+
+            if (mainSocket && mainSocket.readyState === WebSocket.OPEN) {
+                mainSocket.send(JSON.stringify({
+                    type: 'dispatch_staff',
+                    incident_id: modalActiveIncident.id,
+                    lat: victimLat,
+                    lng: victimLng,
+                    category: modalActiveIncident.type,
+                    venue_id: venueId
+                }));
+                
+                logAudit(`[GROUND DISPATCH] Staff assigned to incident #${modalActiveIncident.id}`);
+                closeDispatchModal();
+                
+                // Update Local UI Status
+                const card = document.getElementById(`incident-card-${modalActiveIncident.id}`);
+                if (card) {
+                    const pill = card.querySelector('.status-pill');
+                    if (pill) {
+                        pill.textContent = 'DISPATCHED';
+                        pill.className = 'status-pill bg-blue-500/20 text-blue-500 text-[8px] px-2 py-0.5 rounded uppercase font-black';
+                    }
+                }
+            }
+        }
 
         let crowdHeatLayer;
         let activeIncidentMarkers = []; 

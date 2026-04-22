@@ -196,9 +196,12 @@
                 console.log("WS Payload:", data);
                 
                 // --- SYNC FIXED: Handle Command Dispatch ---
-                if (data.type === 'staff_dispatch' || data.type === 'dispatch_alert' || data.type === 'global_emergency_alert' || data.alert) {
+                if (data.type === 'dispatch_staff' || data.type === 'dispatch_alert' || data.type === 'global_emergency_alert' || data.alert) {
                     const payload = data.alert || data;
                     if (payload.incident_id) {
+                        // Bug Fix: Explicitly handle UI toggle as requested
+                        document.getElementById('standby-view').classList.add('hidden');
+                        document.getElementById('incident-briefing').classList.remove('hidden');
                         triggerDeployment(payload);
                     }
                 }
