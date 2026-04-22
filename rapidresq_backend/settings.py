@@ -152,14 +152,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-# CSRF Trusted Origins (extend via env var)
-CSRF_TRUSTED_ORIGINS = [
-    "https://rapidresq-6tww.onrender.com",
-    "https://*.railway.app",
-    "https://*.render.com",
-    "http://localhost:8000",
-    "http://127.0.0.1:8000",
-] + [o for o in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',') if o]
+# CSRF Trusted Origins (Render Production)
+CSRF_TRUSTED_ORIGINS = ['https://rapidresq-6tww.onrender.com']
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'
