@@ -314,7 +314,7 @@
                         const navBtn = document.getElementById('nav-btn');
                         if (navBtn) {
                             navBtn.onclick = function () {
-                                // Opens Google Maps Directions to the target location
+                                // BUG FIX: Corrected Google Maps Link
                                 const url = `https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}&travelmode=walking`;
                                 window.open(url, '_blank');
                             };
@@ -345,36 +345,43 @@
                 }
             };
 
-            // Responder Arrived
+            // --- UPDATED ARRIVED & RESOLUTION LOGIC ---
             document.getElementById('arrived-btn').onclick = () => {
                 if (currentActiveIncidentId && socket.readyState === WebSocket.OPEN) {
+                    // 1. Status Update to Backend
                     socket.send(JSON.stringify({ type: 'incident_resolving', incident_id: currentActiveIncidentId, staff_name: staffName }));
+
+                    // 2. Alert Admin immediately in Tactical Chat
+                    socket.send(JSON.stringify({
+                        type: 'staff_command_chat',
+                        venue_id: venueId,
+                        staff_id: staffId,
+                        staff_name: staffName,
+                        message: "📍 I HAVE ARRIVED AT THE SCENE."
+                    }));
+
+                    // 3. Reveal the action buttons
                     document.getElementById('arrived-btn').classList.add('hidden');
                     document.getElementById('verification-group').classList.remove('hidden');
-                }
-            };
 
-            // VERIFY: REAL INCIDENT
-            document.getElementById('verify-real-btn').onclick = () => {
-                if (currentActiveIncidentId && socket.readyState === WebSocket.OPEN) {
-                    socket.send(JSON.stringify({
-                        type: 'incident_verified',
-                        status: 'confirmed',
-                        incident_id: currentActiveIncidentId
-                    }));
-                    location.reload();
-                }
-            };
+                    // 4. Change Button 1 to "ISSUE RESOLVED"
+                    const btn1 = document.getElementById('verify-real-btn');
+                    btn1.innerText = "Issue Resolved";
+                    btn1.className = "bg-[#02DEE5] text-black py-4 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-[#02DEE5]/20 active:scale-95 transition-transform";
+                    btn1.onclick = () => {
+                        socket.send(JSON.stringify({ type: 'rescue_verified', incident_id: currentActiveIncidentId }));
+                        socket.send(JSON.stringify({ type: 'staff_command_chat', venue_id: venueId, staff_id: staffId, staff_name: staffName, message: "✅ ISSUE RESOLVED. SITUATION SECURE." }));
+                        setTimeout(() => location.reload(), 1000);
+                    };
 
-            // REPORT: FALSE ALARM / FAKE
-            document.getElementById('report-fake-btn').onclick = () => {
-                if (currentActiveIncidentId && socket.readyState === WebSocket.OPEN) {
-                    socket.send(JSON.stringify({
-                        type: 'incident_verified',
-                        status: 'fake',
-                        incident_id: currentActiveIncidentId
-                    }));
-                    location.reload();
+                    // 5. Change Button 2 to "NEED HELP / BACKUP"
+                    const btn2 = document.getElementById('report-fake-btn');
+                    btn2.innerText = "Need Help / Backup";
+                    btn2.className = "bg-red-600 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-red-600/20 active:scale-95 transition-transform";
+                    btn2.onclick = () => {
+                        socket.send(JSON.stringify({ type: 'staff_command_chat', venue_id: venueId, staff_id: staffId, staff_name: staffName, message: "🚨 URGENT: I NEED BACKUP AT THIS LOCATION!" }));
+                        alert("Backup request sent to Command Center!");
+                    };
                 }
             };
 
