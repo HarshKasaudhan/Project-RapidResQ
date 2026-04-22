@@ -288,18 +288,30 @@
                     message: message
                 }));
 
-                // Alert local Staff as well
+                // Alert local Staff as well (SYNC FIXED)
                 const latMatch = (modalActiveIncident.loc || "").match(/Lat:\s*([0-9.-]+)/i);
                 const lngMatch = (modalActiveIncident.loc || "").match(/Lng:\s*([0-9.-]+)/i);
+                const incidentLat = latMatch ? parseFloat(latMatch[1]) : 0;
+                const incidentLng = lngMatch ? parseFloat(lngMatch[1]) : 0;
+
                 mainSocket.send(JSON.stringify({
-                    type: 'staff_dispatch',
+                    type: 'dispatch_staff',
                     venue_id: venueId,
                     incident_id: modalActiveIncident.id,
                     category: modalActiveIncident.type,
-                    location: modalActiveIncident.loc,
-                    lat: latMatch ? parseFloat(latMatch[1]) : 0,
-                    lng: lngMatch ? parseFloat(lngMatch[1]) : 0
+                    lat: incidentLat,
+                    lng: incidentLng
                 }));
+
+                // Update Local UI Status
+                const card = document.getElementById(`incident-card-${modalActiveIncident.id}`);
+                if (card) {
+                    const pill = card.querySelector('.status-pill');
+                    if (pill) {
+                        pill.textContent = 'DISPATCHED';
+                        pill.className = 'status-pill bg-blue-500/20 text-blue-500 text-[8px] px-2 py-0.5 rounded uppercase font-black';
+                    }
+                }
 
                 logAudit(`[MANUAL DISPATCH] Units [${units.join(', ')}] deployed to #${modalActiveIncident.id}`);
             }

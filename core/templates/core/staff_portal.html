@@ -195,10 +195,12 @@
                 const data = JSON.parse(e.data);
                 console.log("WS Payload:", data);
                 
-                // Dispatch or New Incident Alert
-                if (data.type === 'dispatch_alert' || data.type === 'global_emergency_alert' || data.alert) {
+                // --- SYNC FIXED: Handle Command Dispatch ---
+                if (data.type === 'staff_dispatch' || data.type === 'dispatch_alert' || data.type === 'global_emergency_alert' || data.alert) {
                     const payload = data.alert || data;
-                    if (payload.incident_id) triggerDeployment(payload);
+                    if (payload.incident_id) {
+                        triggerDeployment(payload);
+                    }
                 }
 
                 // Fix: Correct Tactical Chat Sync Logic

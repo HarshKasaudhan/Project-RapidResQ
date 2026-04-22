@@ -565,6 +565,23 @@ class GlobalAlertConsumer(AsyncWebsocketConsumer):
                 print(f"ERROR: Failed to resolve venue context: {e}")
                 venue_obj = None
 
+            if data.get('type') == 'dispatch_staff':
+                incident_id = data.get('incident_id')
+                venue_id = data.get('venue_id')
+                
+                await self.channel_layer.group_send(
+                    f"venue_{venue_id}",
+                    {
+                        'type': 'staff_dispatch',
+                        'incident_id': incident_id,
+                        'category': data.get('category'),
+                        'lat': data.get('lat'),
+                        'lng': data.get('lng'),
+                        'location': f"Lat: {data.get('lat')}, Lng: {data.get('lng')}"
+                    }
+                )
+                return
+
             if data.get('type') == 'raw_voice_transcript':
                 transcript = data.get('transcript', 'No transcript provided.')
                 frontend_location = data.get('location', 'Unknown')
