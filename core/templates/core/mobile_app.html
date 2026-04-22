@@ -1005,9 +1005,8 @@
                 
                 if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
                     chatSocket.send(JSON.stringify({ 
-                        type: 'chat_message',
-                        message: text, 
-                        sender_id: 'user' 
+                        type: "chat_message",
+                        message: text
                     }));
                     if (chatInp) { chatInp.value = ''; chatInp.focus(); }
                 }

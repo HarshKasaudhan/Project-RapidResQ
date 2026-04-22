@@ -217,7 +217,7 @@
                         
                         // Wire the navigation button
                         document.getElementById('nav-btn').onclick = function() {
-                            window.open(`https://www.google.com/maps/dir/?api=1&destination=${data.lat},${data.lng}`, '_blank');
+                            window.location.href = `https://www.google.com/maps/dir/?api=1&destination=${data.lat},${data.lng}`;
                         };
                     }
                     return;
