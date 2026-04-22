@@ -47,10 +47,10 @@
     <main class="flex-grow p-4 space-y-4 max-w-md mx-auto w-full">
         
         <!-- Incident Briefing (Hidden by default) -->
-        <div id="incident-briefing" class="hidden glass-panel p-5 rounded-2xl border-red-500/20 active-deployment">
+        <div id="incident-briefing" id="active-deployment" class="hidden glass-panel p-5 rounded-2xl border-red-500/20 active-deployment">
             <div class="flex justify-between items-start mb-4">
                 <div>
-                    <h2 id="brief-category" class="text-xl font-black text-red-500 uppercase leading-none mb-1">Emergency</h2>
+                    <h2 id="brief-category" id="target-category" class="text-xl font-black text-red-500 uppercase leading-none mb-1">Emergency</h2>
                     <p id="brief-location" class="text-[10px] font-mono text-gray-400">---</p>
                 </div>
                 <div class="bg-red-500 text-black text-[8px] font-black px-2 py-1 rounded uppercase tracking-tighter">Priority 1</div>
@@ -79,7 +79,7 @@
         </div>
 
         <!-- Standby View -->
-        <div id="standby-view" class="glass-panel p-10 rounded-2xl text-center">
+        <div id="standby-view" id="awaiting-orders" class="glass-panel p-10 rounded-2xl text-center">
             <div class="w-16 h-16 bg-[#02DEE5]/10 rounded-full flex items-center justify-center mx-auto mb-6"><div class="w-2 h-2 bg-[#02DEE5] rounded-full animate-ping"></div></div>
             <h2 class="text-xl font-bold tracking-normal mb-1">Awaiting Orders</h2>
             <p class="text-gray-500 text-[10px] uppercase tracking-widest mb-6">Telemetry Synchronized</p>
@@ -195,16 +195,36 @@
                 const data = JSON.parse(e.data);
                 console.log("WS Payload:", data);
                 
-                // --- SYNC FIXED: Handle Command Dispatch ---
-                if (data.type === 'dispatch_staff' || data.type === 'dispatch_alert' || data.type === 'global_emergency_alert' || data.alert) {
-                    const payload = data.alert || data;
-                    if (payload.incident_id) {
-                        // Bug Fix: Explicitly handle UI toggle as requested
-                        document.getElementById('standby-view').classList.add('hidden');
-                        document.getElementById('incident-briefing').classList.remove('hidden');
-                        triggerDeployment(payload);
+                if (data.type === 'dispatch_staff') {
+                    document.getElementById('awaiting-orders').style.display = 'none';
+                    document.getElementById('active-deployment').style.display = 'block';
+
+                    // Update UI text (assuming IDs exist or create them)
+                    document.getElementById('target-category').innerText = data.category;
+
+                    // Update Map (assuming Leaflet 'map' and 'marker' variables exist)
+                    if(data.lat && data.lng) {
+                        if (!map) initMap();
+                        map.setView([data.lat, data.lng], 16);
+                        
+                        if (!victimMarker) {
+                            victimMarker = L.marker([data.lat, data.lng], {
+                                icon: L.divIcon({className: 'bg-red-600 w-4 h-4 rounded-full border-2 border-white animate-ping'})
+                            }).addTo(map);
+                        } else {
+                            victimMarker.setLatLng([data.lat, data.lng]);
+                        }
+                        
+                        // Wire the navigation button
+                        document.getElementById('nav-btn').onclick = function() {
+                            window.open(`https://www.google.com/maps/dir/?api=1&destination=${data.lat},${data.lng}`, '_blank');
+                        };
                     }
+                    return;
                 }
+
+                // --- SYNC FIXED: Handle Command Dispatch (Legacy fallback) ---
+                if (data.type === 'dispatch_alert' || data.type === 'global_emergency_alert' || data.alert) {
 
                 // Fix: Correct Tactical Chat Sync Logic
                 if (data.type === 'staff_chat' || data.type === 'staff_chat_broadcast') {

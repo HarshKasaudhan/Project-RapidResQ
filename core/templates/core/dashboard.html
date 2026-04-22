@@ -152,24 +152,27 @@
             
             const latMatch = (modalActiveIncident.loc || "").match(/Lat:\s*([0-9.-]+)/i);
             const lngMatch = (modalActiveIncident.loc || "").match(/Lng:\s*([0-9.-]+)/i);
-            const victimLat = latMatch ? parseFloat(latMatch[1]) : 0;
-            const victimLng = lngMatch ? parseFloat(lngMatch[1]) : 0;
+            
+            const selectedIncidentId = modalActiveIncident.id;
+            const selectedIncidentCategory = modalActiveIncident.type;
+            const selectedIncidentLat = latMatch ? parseFloat(latMatch[1]) : 0;
+            const selectedIncidentLng = lngMatch ? parseFloat(lngMatch[1]) : 0;
 
             if (mainSocket && mainSocket.readyState === WebSocket.OPEN) {
-                mainSocket.send(JSON.stringify({
+                const payload = {
                     type: 'dispatch_staff',
-                    incident_id: modalActiveIncident.id,
-                    lat: victimLat,
-                    lng: victimLng,
-                    category: modalActiveIncident.type,
-                    venue_id: venueId
-                }));
+                    incident_id: selectedIncidentId,
+                    category: selectedIncidentCategory,
+                    lat: selectedIncidentLat,
+                    lng: selectedIncidentLng
+                };
+                mainSocket.send(JSON.stringify(payload));
                 
-                logAudit(`[GROUND DISPATCH] Staff assigned to incident #${modalActiveIncident.id}`);
+                logAudit(`[GROUND DISPATCH] Staff assigned to incident #${selectedIncidentId}`);
                 closeDispatchModal();
                 
                 // Update Local UI Status
-                const card = document.getElementById(`incident-card-${modalActiveIncident.id}`);
+                const card = document.getElementById(`incident-card-${selectedIncidentId}`);
                 if (card) {
                     const pill = card.querySelector('.status-pill');
                     if (pill) {

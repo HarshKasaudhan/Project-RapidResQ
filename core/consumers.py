@@ -569,15 +569,15 @@ class GlobalAlertConsumer(AsyncWebsocketConsumer):
                 incident_id = data.get('incident_id')
                 venue_id = data.get('venue_id')
                 
+                # Broadcast specifically as 'dispatch_staff' to ensure Part B receiver triggers
                 await self.channel_layer.group_send(
                     f"venue_{venue_id}",
                     {
-                        'type': 'staff_dispatch',
+                        'type': 'dispatch_staff',
                         'incident_id': incident_id,
                         'category': data.get('category'),
                         'lat': data.get('lat'),
-                        'lng': data.get('lng'),
-                        'location': f"Lat: {data.get('lat')}, Lng: {data.get('lng')}"
+                        'lng': data.get('lng')
                     }
                 )
                 return
@@ -760,6 +760,15 @@ class GlobalAlertConsumer(AsyncWebsocketConsumer):
             'incident_id': event['incident_id'],
             'eta': event['eta'],
             'role': event['role']
+        }))
+
+    async def dispatch_staff(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'dispatch_staff',
+            'incident_id': event['incident_id'],
+            'category': event['category'],
+            'lat': event['lat'],
+            'lng': event['lng']
         }))
 
     async def dispatch_alert(self, event):
