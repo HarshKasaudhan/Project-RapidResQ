@@ -477,17 +477,11 @@ class GlobalAlertConsumer(AsyncWebsocketConsumer):
                 )
                 return
 
-            # --- BACKEND ROUTER FIX (STEP 3) ---
+            # --- ETA UPDATE FIX ---
             message_type = data.get('type')
-            if message_type == 'dispatch_staff':
+            if message_type == 'eta_update':
                 await self.channel_layer.group_send(
-                    'staff_group', # Ensure this is your correct staff group name
-                    {'type': 'staff_dispatch_message', 'data': data}
-                )
-                return
-            elif message_type == 'eta_update':
-                await self.channel_layer.group_send(
-                    f"incident_{data.get('incident_id')}", # Route to the specific incident room
+                    f"incident_chat_{data.get('incident_id')}", 
                     {'type': 'eta_update_message', 'data': data}
                 )
                 return

@@ -1,45 +1,86 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Command Center | RapidResQ Enterprise</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style> body { background-color: #080808; color: white; } </style>
+    <style>
+        body {
+            background-color: #080808;
+            color: white;
+        }
+    </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
     <style>
         :root {
             --bg-black: #080808;
             --primary-cyan: #02DEE5;
             --secondary-blue: #1F76F3;
         }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--bg-black); color: #e5e5e5; }
-        .font-mono { font-family: 'JetBrains Mono', monospace; }
-        .panel { background: #0f0f0f; border: 1px solid rgba(2, 222, 229, 0.1); border-radius: 12px; }
-        .btn-primary { background: linear-gradient(135deg, var(--primary-cyan) 0%, var(--secondary-blue) 100%); color: black; font-weight: 700; }
-        .map-layer { filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(85%); }
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-black);
+            color: #e5e5e5;
+        }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .panel {
+            background: #0f0f0f;
+            border: 1px solid rgba(2, 222, 229, 0.1);
+            border-radius: 12px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-cyan) 0%, var(--secondary-blue) 100%);
+            color: black;
+            font-weight: 700;
+        }
+
+        .map-layer {
+            filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(85%);
+        }
+
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
     </style>
 </head>
+
 <body class="min-h-screen flex flex-col antialiased">
 
     <!-- Header -->
     <header class="bg-[#0f0f0f] border-b border-white/5 sticky top-0 z-50">
         <div class="px-6 py-4 flex items-center justify-between">
             <a href="{% url 'home' %}" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
-                <svg class="w-6 h-6 text-[#02DEE5]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                <svg class="w-6 h-6 text-[#02DEE5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z">
+                    </path>
+                </svg>
                 <h1 class="text-[10px] font-bold tracking-[0.2em] text-white uppercase">
                     {{ venue.hotel_name }} <span class="text-[#02DEE5]/50 font-normal">/ Command</span>
                 </h1>
             </a>
             <div class="flex items-center gap-6 text-[10px] font-mono">
-                <button onclick="triggerGlobalEvacuation()" class="bg-red-600 hover:bg-red-700 text-white text-[10px] font-black px-4 py-2 rounded-lg uppercase tracking-widest animate-pulse border-2 border-white/20 shadow-lg shadow-red-600/20 mr-4">GLOBAL EVACUATION</button>
-                <span class="text-gray-500 uppercase tracking-widest">Status: <span class="text-[#02DEE5]" id="status-indicator">Secure</span></span>
+                <button onclick="triggerGlobalEvacuation()"
+                    class="bg-red-600 hover:bg-red-700 text-white text-[10px] font-black px-4 py-2 rounded-lg uppercase tracking-widest animate-pulse border-2 border-white/20 shadow-lg shadow-red-600/20 mr-4">GLOBAL
+                    EVACUATION</button>
+                <span class="text-gray-500 uppercase tracking-widest">Status: <span class="text-[#02DEE5]"
+                        id="status-indicator">Secure</span></span>
                 <span class="text-gray-500" id="clock">00:00:00 UTC</span>
-                <a href="{% url 'home' %}" class="text-gray-500 hover:text-white transition-colors border-l border-white/10 pl-6 ml-2">EXIT</a>
+                <a href="{% url 'home' %}"
+                    class="text-gray-500 hover:text-white transition-colors border-l border-white/10 pl-6 ml-2">EXIT</a>
             </div>
         </div>
     </header>
@@ -48,38 +89,66 @@
         <section class="xl:col-span-2 flex flex-col gap-6">
             <div class="panel p-1 h-[60%] relative overflow-hidden">
                 <div id="map" class="w-full h-full rounded-lg bg-[#111]"></div>
-                
-                <div id="dashboard-chat-panel" class="absolute bottom-4 right-4 z-[1000] w-72 h-80 bg-[#080808]/95 backdrop-blur-xl border border-[#02DEE5]/20 rounded-2xl shadow-2xl flex flex-col hidden">
+
+                <div id="dashboard-chat-panel"
+                    class="absolute bottom-4 right-4 z-[1000] w-72 h-80 bg-[#080808]/95 backdrop-blur-xl border border-[#02DEE5]/20 rounded-2xl shadow-2xl flex flex-col hidden">
                     <div class="p-3 border-b border-white/5 flex justify-between items-center bg-black/40">
                         <div>
-                            <h4 id="chat-target-name" class="text-[9px] font-black text-[#02DEE5] uppercase tracking-widest">Live SOS Chat</h4>
-                            <p id="chat-incident-info" class="text-[7px] text-gray-500 font-bold uppercase tracking-widest">Incident Active</p>
+                            <h4 id="chat-target-name"
+                                class="text-[9px] font-black text-[#02DEE5] uppercase tracking-widest">Live SOS Chat
+                            </h4>
+                            <p id="chat-incident-info"
+                                class="text-[7px] text-gray-500 font-bold uppercase tracking-widest">Incident Active</p>
                         </div>
-                        <button onclick="toggleDashboardChat()" class="text-gray-500 hover:text-white"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                        <button onclick="toggleDashboardChat()" class="text-gray-500 hover:text-white"><svg
+                                class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12"></path>
+                            </svg></button>
                     </div>
-                    <div id="dashboard-chat-messages" class="flex-grow p-4 overflow-y-auto space-y-3 text-[10px] font-mono scrollbar-hide"></div>
+                    <div id="dashboard-chat-messages"
+                        class="flex-grow p-4 overflow-y-auto space-y-3 text-[10px] font-mono scrollbar-hide"></div>
                     <div class="p-3 border-t border-white/5 bg-black/40 flex gap-2">
-                        <input type="text" id="dashboard-chat-input" class="flex-grow bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[10px] text-white focus:outline-none focus:border-[#02DEE5]" placeholder="Command Response...">
-                        <button onclick="sendDashboardMessage()" class="p-2 bg-[#02DEE5] rounded-lg text-black transition-transform active:scale-95"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg></button>
+                        <input type="text" id="dashboard-chat-input"
+                            class="flex-grow bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[10px] text-white focus:outline-none focus:border-[#02DEE5]"
+                            placeholder="Command Response...">
+                        <button onclick="sendDashboardMessage()"
+                            class="p-2 bg-[#02DEE5] rounded-lg text-black transition-transform active:scale-95"><svg
+                                class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                            </svg></button>
                     </div>
                 </div>
 
                 <!-- Tactical Comms Panel -->
-                <div id="tactical-chat-panel" class="absolute top-4 left-4 z-[1000] w-64 h-64 bg-black/80 backdrop-blur-md border border-white/10 rounded-xl flex flex-col overflow-hidden shadow-2xl">
+                <div id="tactical-chat-panel"
+                    class="absolute top-4 left-4 z-[1000] w-64 h-64 bg-black/80 backdrop-blur-md border border-white/10 rounded-xl flex flex-col overflow-hidden shadow-2xl">
                     <div class="p-2 bg-white/5 border-b border-white/5 flex justify-between items-center">
-                        <span class="text-[8px] font-black text-[#1F76F3] uppercase tracking-[0.2em]">Tactical Feed</span>
+                        <span class="text-[8px] font-black text-[#1F76F3] uppercase tracking-[0.2em]">Tactical
+                            Feed</span>
                     </div>
-                    <div id="tactical-messages" class="flex-grow p-3 overflow-y-auto space-y-2 text-[9px] font-mono scrollbar-hide"></div>
+                    <div id="tactical-messages"
+                        class="flex-grow p-3 overflow-y-auto space-y-2 text-[9px] font-mono scrollbar-hide"></div>
                     <div class="p-2 border-t border-white/5 flex gap-1">
-                        <input type="text" id="tactical-input" class="flex-grow bg-white/5 border border-white/5 rounded px-2 py-1 text-[9px] text-white focus:outline-none" placeholder="Tactical Msg...">
-                        <button onclick="sendTacticalMessage()" class="p-1 bg-[#1F76F3] rounded text-white active:scale-95 transition-transform"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" stroke-width="2" stroke="currentColor"></path></svg></button>
+                        <input type="text" id="tactical-input"
+                            class="flex-grow bg-white/5 border border-white/5 rounded px-2 py-1 text-[9px] text-white focus:outline-none"
+                            placeholder="Tactical Msg...">
+                        <button onclick="sendTacticalMessage()"
+                            class="p-1 bg-[#1F76F3] rounded text-white active:scale-95 transition-transform"><svg
+                                class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" stroke-width="2" stroke="currentColor">
+                                </path>
+                            </svg></button>
                     </div>
                 </div>
             </div>
             <div class="panel p-5 flex-grow flex flex-col overflow-hidden">
                 <div class="flex items-center justify-between mb-4 border-b border-white/5 pb-4">
                     <h2 class="text-[10px] font-bold text-[#02DEE5] uppercase tracking-[0.2em]">Active Incidents</h2>
-                    <span class="bg-[#02DEE5]/10 text-[#02DEE5] text-[10px] px-2 py-1 rounded font-mono border border-[#02DEE5]/20" id="emergency-count">0 DETECTED</span>
+                    <span
+                        class="bg-[#02DEE5]/10 text-[#02DEE5] text-[10px] px-2 py-1 rounded font-mono border border-[#02DEE5]/20"
+                        id="emergency-count">0 DETECTED</span>
                 </div>
                 <div id="emergencies-container" class="flex-grow overflow-y-auto space-y-3 pr-2 scrollbar-hide"></div>
             </div>
@@ -87,50 +156,68 @@
 
         <section class="flex flex-col gap-6 h-full">
             <div class="panel p-6">
-                <h2 class="text-[10px] font-bold text-[#02DEE5] uppercase tracking-[0.2em] mb-6">Dispatch Intelligence</h2>
+                <h2 class="text-[10px] font-bold text-[#02DEE5] uppercase tracking-[0.2em] mb-6">Dispatch Intelligence
+                </h2>
                 <h3 class="text-[10px] font-bold text-[#1F76F3] uppercase tracking-widest mb-4">Nearest Responders</h3>
                 <div id="nearest-staff-container" class="space-y-2"></div>
             </div>
             <div class="panel flex-grow flex flex-col overflow-hidden">
-                <div class="p-4 border-b border-white/5"><h2 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Audit Log</h2></div>
-                <div id="audit-log" class="p-4 overflow-y-auto h-full space-y-3 bg-black/20 font-mono text-[10px]"></div>
+                <div class="p-4 border-b border-white/5">
+                    <h2 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Audit Log</h2>
+                </div>
+                <div id="audit-log" class="p-4 overflow-y-auto h-full space-y-3 bg-black/20 font-mono text-[10px]">
+                </div>
             </div>
         </section>
     </main>
 
     <!-- Dispatch Control Modal -->
-    <div id="dispatch-modal" class="hidden fixed inset-0 z-[5000] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div id="dispatch-modal"
+        class="hidden fixed inset-0 z-[5000] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="panel w-full max-w-md overflow-hidden shadow-2xl border-[#02DEE5]/30">
             <div class="bg-gradient-to-r from-[#02DEE5]/20 to-[#1F76F3]/20 p-6 border-b border-white/5">
                 <h3 class="text-xs font-black uppercase tracking-[0.3em] text-white">Manual Dispatch Control</h3>
-                <p id="modal-incident-title" class="text-[9px] text-[#02DEE5] font-bold mt-1 uppercase">Incident #---</p>
+                <p id="modal-incident-title" class="text-[9px] text-[#02DEE5] font-bold mt-1 uppercase">Incident #---
+                </p>
             </div>
             <div class="p-6 space-y-6">
                 <div>
-                    <p class="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-3">Select Response Units</p>
+                    <p class="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-3">Select Response Units
+                    </p>
                     <div class="grid grid-cols-3 gap-3">
-                        <label class="flex flex-col items-center gap-2 p-3 rounded-xl border border-white/5 bg-white/5 cursor-pointer hover:bg-white/10 transition-colors">
+                        <label
+                            class="flex flex-col items-center gap-2 p-3 rounded-xl border border-white/5 bg-white/5 cursor-pointer hover:bg-white/10 transition-colors">
                             <input type="checkbox" id="unit-police" class="w-4 h-4 accent-[#02DEE5]">
                             <span class="text-[9px] font-bold uppercase tracking-tighter">Police</span>
                         </label>
-                        <label class="flex flex-col items-center gap-2 p-3 rounded-xl border border-white/5 bg-white/5 cursor-pointer hover:bg-white/10 transition-colors">
+                        <label
+                            class="flex flex-col items-center gap-2 p-3 rounded-xl border border-white/5 bg-white/5 cursor-pointer hover:bg-white/10 transition-colors">
                             <input type="checkbox" id="unit-medical" class="w-4 h-4 accent-[#02DEE5]">
                             <span class="text-[9px] font-bold uppercase tracking-tighter">Medical</span>
                         </label>
-                        <label class="flex flex-col items-center gap-2 p-3 rounded-xl border border-white/5 bg-white/5 cursor-pointer hover:bg-white/10 transition-colors">
+                        <label
+                            class="flex flex-col items-center gap-2 p-3 rounded-xl border border-white/5 bg-white/5 cursor-pointer hover:bg-white/10 transition-colors">
                             <input type="checkbox" id="unit-fire" class="w-4 h-4 accent-[#02DEE5]">
                             <span class="text-[9px] font-bold uppercase tracking-tighter">Fire</span>
                         </label>
                     </div>
                 </div>
                 <div>
-                    <label class="text-[9px] font-black text-gray-500 uppercase tracking-widest block mb-2">Message to Units (Optional)</label>
-                    <input type="text" id="dispatch-msg" class="w-full bg-black border border-white/10 rounded-lg px-3 py-2 text-[10px] text-white focus:outline-none focus:border-[#02DEE5]" placeholder="e.g. Approach with caution...">
+                    <label class="text-[9px] font-black text-gray-500 uppercase tracking-widest block mb-2">Message to
+                        Units (Optional)</label>
+                    <input type="text" id="dispatch-msg"
+                        class="w-full bg-black border border-white/10 rounded-lg px-3 py-2 text-[10px] text-white focus:outline-none focus:border-[#02DEE5]"
+                        placeholder="e.g. Approach with caution...">
                 </div>
                 <div class="flex gap-3 pt-2">
-                    <button onclick="closeDispatchModal()" class="flex-1 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest hover:text-white transition-colors">Cancel</button>
-                    <button id="dispatch-staff-btn" onclick="dispatchGroundStaff()" class="flex-[2] bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-600/20 transition-all">DISPATCH GROUND STAFF</button>
-                    <button onclick="confirmManualDispatch()" class="flex-[2] btn-primary py-3 rounded-xl text-[10px] uppercase tracking-widest shadow-lg shadow-[#02DEE5]/20">Confirm Dispatch</button>
+                    <button onclick="closeDispatchModal()"
+                        class="flex-1 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest hover:text-white transition-colors">Cancel</button>
+                    <button id="dispatch-staff-btn" onclick="dispatchGroundStaff()"
+                        class="flex-[2] bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-600/20 transition-all">DISPATCH
+                        GROUND STAFF</button>
+                    <button onclick="confirmManualDispatch()"
+                        class="flex-[2] btn-primary py-3 rounded-xl text-[10px] uppercase tracking-widest shadow-lg shadow-[#02DEE5]/20">Confirm
+                        Dispatch</button>
                 </div>
             </div>
         </div>
@@ -141,7 +228,7 @@
 
     <script>
         let map;
-        let staffMarkers = {}; 
+        let staffMarkers = {};
         let currentChatSocket = null;
         let currentIncidentId = null;
         let mainSocket = null;
@@ -149,31 +236,30 @@
 
         function dispatchGroundStaff() {
             if (!modalActiveIncident) return;
-            
+
             const latMatch = (modalActiveIncident.loc || "").match(/Lat:\s*([0-9.-]+)/i);
             const lngMatch = (modalActiveIncident.loc || "").match(/Lng:\s*([0-9.-]+)/i);
-            
+
             const currentIncidentId = modalActiveIncident.id;
             const currentIncidentCategory = modalActiveIncident.type;
             const currentIncidentLat = latMatch ? latMatch[1] : "undefined";
             const currentIncidentLng = lngMatch ? lngMatch[1] : "undefined";
 
             if (mainSocket && mainSocket.readyState === WebSocket.OPEN) {
-                const payload = {
+                const dispatchPayload = {
                     type: 'dispatch_staff',
-                    incident_id: currentIncidentId || "Unknown",
+                    venue_id: venueId, // BUG FIX: THIS WAS MISSING!
+                    incident_id: currentIncidentId || "N/A",
                     category: currentIncidentCategory || "EMERGENCY",
                     lat: currentIncidentLat || "undefined",
                     lng: currentIncidentLng || "undefined"
                 };
-                
-                // Send to the WebSocket
-                mainSocket.send(JSON.stringify(payload));
-                console.log("Dispatch payload sent:", payload);
-                
+                mainSocket.send(JSON.stringify(dispatchPayload));
+                console.log("SENT DISPATCH TO BACKEND:", dispatchPayload);
+
                 logAudit(`[GROUND DISPATCH] Staff assigned to incident #${currentIncidentId}`);
                 closeDispatchModal();
-                
+
                 // Update Local UI Status
                 const card = document.getElementById(`incident-card-${currentIncidentId}`);
                 if (card) {
@@ -187,7 +273,7 @@
         }
 
         let crowdHeatLayer;
-        let activeIncidentMarkers = []; 
+        let activeIncidentMarkers = [];
 
         function initHeatmap(mapInstance) {
             crowdHeatLayer = L.heatLayer([], {
@@ -225,7 +311,7 @@
             const protocol = location.protocol === 'https:' ? 'wss://' : 'ws://';
             const url = `${protocol}${location.host}/ws/chat/${incidentId}/`;
             currentChatSocket = new WebSocket(url);
-            
+
             currentChatSocket.onmessage = (e) => {
                 const data = JSON.parse(e.data);
                 appendDashboardMessage(data.message, data.sender_id === 'user' ? 'user' : (data.is_ai ? 'ai' : 'command'));
@@ -293,12 +379,12 @@
         function dispatchAction(incidentId, hazardType, location) {
             modalActiveIncident = { id: incidentId, type: hazardType, loc: location };
             document.getElementById('modal-incident-title').textContent = `Incident #${incidentId} (${hazardType})`;
-            
+
             // Smart Defaults
             document.getElementById('unit-police').checked = true; // Police always default
             document.getElementById('unit-medical').checked = hazardType.toLowerCase().includes('medical');
             document.getElementById('unit-fire').checked = hazardType.toLowerCase().includes('fire');
-            
+
             document.getElementById('dispatch-modal').classList.remove('hidden');
         }
 
@@ -311,7 +397,7 @@
             if (document.getElementById('unit-police').checked) units.push('Police');
             if (document.getElementById('unit-medical').checked) units.push('Medical');
             if (document.getElementById('unit-fire').checked) units.push('Fire');
-            
+
             const message = document.getElementById('dispatch-msg').value || `Immediate assistance required for ${modalActiveIncident.type}`;
 
             if (units.length === 0) {
@@ -366,13 +452,13 @@
         });
 
         document.addEventListener('DOMContentLoaded', () => {
-            map = L.map('map', {zoomControl: false, attributionControl: false}).setView([30.7699, 76.5756], 15);
+            map = L.map('map', { zoomControl: false, attributionControl: false }).setView([30.7699, 76.5756], 15);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { className: 'map-layer', maxZoom: 20 }).addTo(map);
             initHeatmap(map);
 
             const socketUrl = `${(window.location.protocol === 'https:') ? 'wss://' : 'ws://'}${window.location.host}/ws/alerts/?venue_id=${venueId}&role=ADMIN`;
             mainSocket = new WebSocket(socketUrl);
-            
+
             mainSocket.onmessage = e => {
                 const data = JSON.parse(e.data);
                 if (data.staff_update) {
@@ -381,7 +467,7 @@
                     if (staffMarkers[s.id]) {
                         if (map.distance(staffMarkers[s.id].getLatLng(), newLatLng) > 15) staffMarkers[s.id].setLatLng(newLatLng);
                     } else {
-                        staffMarkers[s.id] = L.marker(newLatLng, {icon: createStaffIcon(s.name)}).addTo(map);
+                        staffMarkers[s.id] = L.marker(newLatLng, { icon: createStaffIcon(s.name) }).addTo(map);
                     }
                     updateCrowdHeatmap(); return;
                 }
@@ -466,7 +552,7 @@
                     let lat = isConfirmed ? (parseFloat(data.lat) || 30.7699) : 30.7699;
                     let lng = isConfirmed ? (parseFloat(data.lng) || 76.5756) : 76.5756;
                     if (lat === 0 && lng === 0) { lat = 30.7699; lng = 76.5756; }
-                    const marker = L.marker([lat, lng], {icon: L.divIcon({className: 'bg-red-600 w-4 h-4 rounded-full border-2 border-white animate-ping'})}).addTo(map);
+                    const marker = L.marker([lat, lng], { icon: L.divIcon({ className: 'bg-red-600 w-4 h-4 rounded-full border-2 border-white animate-ping' }) }).addTo(map);
                     activeIncidentMarkers.push(marker); updateCrowdHeatmap(); map.setView([lat, lng], 16);
                     const container = document.getElementById('emergencies-container');
                     const div = document.createElement('div');
@@ -495,4 +581,5 @@
         });
     </script>
 </body>
+
 </html>

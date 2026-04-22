@@ -1,15 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Staff Tactical Portal | RapidResQ</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style> body { background-color: #080808; color: white; } </style>
+    <style>
+        body {
+            background-color: #080808;
+            color: white;
+        }
+    </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
     <meta name="csrf-token" content="{{ csrf_token }}">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
     <style>
         :root {
             --bg-black: #080808;
@@ -17,62 +25,123 @@
             --secondary-blue: #1F76F3;
             --danger-red: #dc2626;
         }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--bg-black); color: #fff; overflow-x: hidden; }
-        .font-mono { font-family: 'JetBrains Mono', monospace; }
-        .glass-panel { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.05); }
-        .active-deployment { border-top: 4px solid var(--danger-red); background: rgba(220, 38, 38, 0.05); }
-        .status-badge-active { background: var(--danger-red); animation: pulse-red 2s infinite; }
-        @keyframes pulse-red { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-        #staff-map { height: 200px; border-radius: 12px; margin-bottom: 1rem; border: 1px solid rgba(255,255,255,0.1); }
-        .map-layer { filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(85%); }
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-black);
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .active-deployment {
+            border-top: 4px solid var(--danger-red);
+            background: rgba(220, 38, 38, 0.05);
+        }
+
+        .status-badge-active {
+            background: var(--danger-red);
+            animation: pulse-red 2s infinite;
+        }
+
+        @keyframes pulse-red {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        #staff-map {
+            height: 200px;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .map-layer {
+            filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(85%);
+        }
+
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
     </style>
 </head>
+
 <body class="min-h-screen flex flex-col">
 
-    <header id="main-header" class="w-full p-4 border-b border-white/5 flex justify-between items-center sticky top-0 z-10 bg-black/50 backdrop-blur-md transition-colors duration-500">
+    <header id="main-header"
+        class="w-full p-4 border-b border-white/5 flex justify-between items-center sticky top-0 z-10 bg-black/50 backdrop-blur-md transition-colors duration-500">
         <div class="flex items-center gap-3">
             <div id="deployment-indicator" class="w-2 h-2 rounded-full bg-emerald-500"></div>
             <div>
-                <h1 id="unit-label" class="text-[8px] font-black tracking-[0.3em] text-gray-500 uppercase">Unit Standby</h1>
+                <h1 id="unit-label" class="text-[8px] font-black tracking-[0.3em] text-gray-500 uppercase">Unit Standby
+                </h1>
                 <p class="text-xs font-bold text-white">{{ staff.name }}</p>
             </div>
         </div>
         <div class="flex items-center gap-4">
             <span id="status-text" class="text-[8px] font-bold text-gray-500 uppercase tracking-widest">Available</span>
-            <a href="{% url 'home' %}" class="text-[8px] font-black text-gray-500 hover:text-white uppercase tracking-widest border border-white/10 px-3 py-1.5 rounded-lg">Exit</a>
+            <a href="{% url 'home' %}"
+                class="text-[8px] font-black text-gray-500 hover:text-white uppercase tracking-widest border border-white/10 px-3 py-1.5 rounded-lg">Exit</a>
         </div>
     </header>
 
     <main class="flex-grow p-4 space-y-4 max-w-md mx-auto w-full">
-        
+
         <!-- Incident Briefing (Hidden by default) -->
         <div id="incident-briefing" class="hidden glass-panel p-5 rounded-2xl border-red-500/20 active-deployment">
             <div class="flex justify-between items-start mb-4">
                 <div>
-                    <h2 id="brief-category" class="text-xl font-black text-red-500 uppercase leading-none mb-1">Emergency</h2>
+                    <h2 id="brief-category" class="text-xl font-black text-red-500 uppercase leading-none mb-1">
+                        Emergency</h2>
                     <p id="brief-location" class="text-[10px] font-mono text-gray-400">---</p>
                 </div>
-                <div class="bg-red-500 text-black text-[8px] font-black px-2 py-1 rounded uppercase tracking-tighter">Priority 1</div>
+                <div class="bg-red-500 text-black text-[8px] font-black px-2 py-1 rounded uppercase tracking-tighter">
+                    Priority 1</div>
             </div>
-            
+
             <div id="staff-map"></div>
-            
+
             <div class="grid grid-cols-2 gap-2 mb-4">
-                <button id="nav-btn" class="bg-white/10 hover:bg-white/20 text-white py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all">
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" stroke-width="2"></path><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2"></path></svg>
+                <button id="nav-btn"
+                    class="bg-white/10 hover:bg-white/20 text-white py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                            stroke-width="2"></path>
+                        <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2"></path>
+                    </svg>
                     Navigate
                 </button>
-                <button id="arrived-btn" class="bg-amber-500 text-black py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-transform active:scale-95 shadow-lg shadow-amber-500/20">
+                <button id="arrived-btn"
+                    class="bg-amber-500 text-black py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-transform active:scale-95 shadow-lg shadow-amber-500/20">
                     Arrived
                 </button>
             </div>
 
             <div id="verification-group" class="hidden grid grid-cols-2 gap-2 mb-2">
-                <button id="verify-real-btn" class="bg-[#02DEE5] text-black py-4 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-[#02DEE5]/20 active:scale-95 transition-transform">
+                <button id="verify-real-btn"
+                    class="bg-[#02DEE5] text-black py-4 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-[#02DEE5]/20 active:scale-95 transition-transform">
                     Verify: Real Incident
                 </button>
-                <button id="report-fake-btn" class="bg-orange-600 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-orange-600/20 active:scale-95 transition-transform">
+                <button id="report-fake-btn"
+                    class="bg-orange-600 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-orange-600/20 active:scale-95 transition-transform">
                     Report: False Alarm
                 </button>
             </div>
@@ -80,7 +149,9 @@
 
         <!-- Standby View -->
         <div id="standby-view" class="glass-panel p-10 rounded-2xl text-center">
-            <div class="w-16 h-16 bg-[#02DEE5]/10 rounded-full flex items-center justify-center mx-auto mb-6"><div class="w-2 h-2 bg-[#02DEE5] rounded-full animate-ping"></div></div>
+            <div class="w-16 h-16 bg-[#02DEE5]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <div class="w-2 h-2 bg-[#02DEE5] rounded-full animate-ping"></div>
+            </div>
             <h2 class="text-xl font-bold tracking-normal mb-1">Awaiting Orders</h2>
             <p class="text-gray-500 text-[10px] uppercase tracking-widest mb-6">Telemetry Synchronized</p>
             <div class="bg-black/40 border border-white/5 p-4 rounded-xl text-left font-mono">
@@ -96,11 +167,15 @@
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
             </div>
             <div id="staff-chat-messages" class="flex-grow p-4 overflow-y-auto space-y-3 text-[10px] scrollbar-hide">
-                <div class="text-gray-600 text-center uppercase tracking-[0.2em] text-[7px] py-4">Operational sync active</div>
+                <div class="text-gray-600 text-center uppercase tracking-[0.2em] text-[7px] py-4">Operational sync
+                    active</div>
             </div>
             <div class="p-3 border-t border-white/5 flex gap-2">
-                <input type="text" id="staff-chat-input" class="flex-grow bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-[#1F76F3]" placeholder="Update Command...">
-                <button id="staff-chat-send" class="bg-[#1F76F3] text-white px-4 py-2 rounded-xl font-black text-[9px] uppercase transition-transform active:scale-95">Send</button>
+                <input type="text" id="staff-chat-input"
+                    class="flex-grow bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-[#1F76F3]"
+                    placeholder="Update Command...">
+                <button id="staff-chat-send"
+                    class="bg-[#1F76F3] text-white px-4 py-2 rounded-xl font-black text-[9px] uppercase transition-transform active:scale-95">Send</button>
             </div>
         </div>
     </main>
@@ -120,7 +195,7 @@
 
         function initMap() {
             if (map) return;
-            map = L.map('staff-map', {zoomControl: false, attributionControl: false}).setView([30.7699, 76.5756], 15);
+            map = L.map('staff-map', { zoomControl: false, attributionControl: false }).setView([30.7699, 76.5756], 15);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { className: 'map-layer', maxZoom: 20 }).addTo(map);
         }
 
@@ -128,27 +203,27 @@
             currentActiveIncidentId = data.incident_id;
             document.getElementById('standby-view').classList.add('hidden');
             document.getElementById('incident-briefing').classList.remove('hidden');
-            
+
             document.getElementById('main-header').classList.add('bg-red-950');
             document.getElementById('deployment-indicator').className = 'w-2 h-2 rounded-full status-badge-active';
             document.getElementById('unit-label').textContent = 'Active Deployment';
             document.getElementById('unit-label').classList.replace('text-gray-500', 'text-red-500');
-            
+
             document.getElementById('brief-category').textContent = data.category;
             document.getElementById('brief-location').textContent = data.location;
-            
+
             if (!map) initMap();
-            
+
             const vLat = parseFloat(data.lat);
             const vLng = parseFloat(data.lng);
-            
+
             if (!isNaN(vLat) && !isNaN(vLng)) {
                 const newLatLng = L.latLng(vLat, vLng);
-                
+
                 // Fix: 10m distance buffer to prevent jitter
                 if (!victimMarker) {
                     victimMarker = L.marker(newLatLng, {
-                        icon: L.divIcon({className: 'bg-red-600 w-4 h-4 rounded-full border-2 border-white animate-ping'})
+                        icon: L.divIcon({ className: 'bg-red-600 w-4 h-4 rounded-full border-2 border-white animate-ping' })
                     }).addTo(map);
                     lastVictimLat = vLat;
                     lastVictimLng = vLng;
@@ -178,7 +253,7 @@
                 navigator.geolocation.watchPosition(pos => {
                     staffLat = pos.coords.latitude; staffLng = pos.coords.longitude;
                     document.getElementById('gps-status').textContent = `LAT: ${staffLat.toFixed(6)}\nLNG: ${staffLng.toFixed(6)}\nACC: ±${Math.round(pos.coords.accuracy)}m`;
-                    
+
                     if (pos.coords.accuracy < 50) {
                         fetch('', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken }, body: JSON.stringify({ lat: staffLat, lng: staffLng }) });
                         if (socket && socket.readyState === WebSocket.OPEN) {
@@ -194,21 +269,56 @@
             socket.onmessage = e => {
                 const parsedData = JSON.parse(e.data);
                 console.log("WS Payload:", parsedData);
-                
+
                 if (parsedData.type === 'dispatch_staff') {
-                    // Hide 'Awaiting Orders' and Show 'Active Deployment'
-                    document.getElementById('standby-view').style.display = 'none'; 
-                    document.getElementById('incident-briefing').style.display = 'block'; 
+                    console.log("TACTICAL ALERT RECEIVED:", parsedData);
+
+                    // 1. Toggle UI Visibility (Find exact IDs/classes in the HTML)
+                    document.getElementById('standby-view').style.display = 'none';
+                    document.getElementById('incident-briefing').style.display = 'block';
                     document.getElementById('incident-briefing').classList.remove('hidden');
-                    
-                    // Update Category text
-                    document.getElementById('brief-category').innerText = parsedData.category;
-                    
-                    // Update Navigation Route
-                    if (parsedData.lat !== "undefined" && parsedData.lng !== "undefined") {
-                        document.getElementById('nav-btn').onclick = function() {
-                            window.open(`https://www.google.com/maps/dir/?api=1&destination=${parsedData.lat},${parsedData.lng}`, '_blank');
-                        };
+
+                    // 2. Update Emergency Details
+                    document.getElementById('brief-category').innerText = parsedData.category || "CRITICAL EMERGENCY";
+
+                    // 3. Map & Navigation Integration
+                    if (parsedData.lat !== "undefined" && parsedData.lng !== "undefined" && parsedData.lat && parsedData.lng) {
+                        const destLat = parseFloat(parsedData.lat);
+                        const destLng = parseFloat(parsedData.lng);
+
+                        // BUG FIX 1: Map ko start karo agar nahi hai (Yeh missing tha!)
+                        if (!map) {
+                            initMap();
+                        }
+
+                        // Update existing Leaflet Map
+                        if (typeof map !== 'undefined') {
+                            // Check if marker exists, else create it
+                            if (typeof window.targetMarker === 'undefined') {
+                                // Creates a red marker for the emergency
+                                window.targetMarker = L.marker([destLat, destLng], {
+                                    icon: L.divIcon({ className: 'bg-red-600 w-4 h-4 rounded-full border-2 border-white animate-ping' })
+                                }).addTo(map);
+                            } else {
+                                window.targetMarker.setLatLng([destLat, destLng]);
+                            }
+
+                            // Pan map to the emergency location
+                            map.setView([destLat, destLng], 17);
+
+                            // Force map to resize correctly after unhiding the container
+                            setTimeout(() => { map.invalidateSize(); }, 300);
+                        }
+
+                        // 4. Setup Navigation Button
+                        const navBtn = document.getElementById('nav-btn');
+                        if (navBtn) {
+                            navBtn.onclick = function () {
+                                // Opens Google Maps Directions to the target location
+                                const url = `https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}&travelmode=walking`;
+                                window.open(url, '_blank');
+                            };
+                        }
                     }
                     return;
                 }
@@ -247,10 +357,10 @@
             // VERIFY: REAL INCIDENT
             document.getElementById('verify-real-btn').onclick = () => {
                 if (currentActiveIncidentId && socket.readyState === WebSocket.OPEN) {
-                    socket.send(JSON.stringify({ 
-                        type: 'incident_verified', 
-                        status: 'confirmed', 
-                        incident_id: currentActiveIncidentId 
+                    socket.send(JSON.stringify({
+                        type: 'incident_verified',
+                        status: 'confirmed',
+                        incident_id: currentActiveIncidentId
                     }));
                     location.reload();
                 }
@@ -259,10 +369,10 @@
             // REPORT: FALSE ALARM / FAKE
             document.getElementById('report-fake-btn').onclick = () => {
                 if (currentActiveIncidentId && socket.readyState === WebSocket.OPEN) {
-                    socket.send(JSON.stringify({ 
-                        type: 'incident_verified', 
-                        status: 'fake', 
-                        incident_id: currentActiveIncidentId 
+                    socket.send(JSON.stringify({
+                        type: 'incident_verified',
+                        status: 'fake',
+                        incident_id: currentActiveIncidentId
                     }));
                     location.reload();
                 }
@@ -285,12 +395,12 @@
             chatSend.onclick = () => {
                 const msg = chatInput.value.trim();
                 if (msg && socket.readyState === WebSocket.OPEN) {
-                    socket.send(JSON.stringify({ 
-                        type: 'staff_command_chat', 
-                        venue_id: venueId, 
-                        staff_id: staffId, 
-                        staff_name: staffName, 
-                        message: msg 
+                    socket.send(JSON.stringify({
+                        type: 'staff_command_chat',
+                        venue_id: venueId,
+                        staff_id: staffId,
+                        staff_name: staffName,
+                        message: msg
                     }));
                     // The server broadcasts it back, so it will be appended via onmessage
                     chatInput.value = '';
@@ -300,4 +410,5 @@
         });
     </script>
 </body>
+
 </html>
