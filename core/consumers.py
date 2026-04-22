@@ -470,6 +470,21 @@ class GlobalAlertConsumer(AsyncWebsocketConsumer):
                 )
                 return
 
+            # --- BACKEND ROUTER FIX (STEP 3) ---
+            message_type = data.get('type')
+            if message_type == 'dispatch_staff':
+                await self.channel_layer.group_send(
+                    'staff_group', # Ensure this is your correct staff group name
+                    {'type': 'staff_dispatch_message', 'data': data}
+                )
+                return
+            elif message_type == 'eta_update':
+                await self.channel_layer.group_send(
+                    f"incident_{data.get('incident_id')}", # Route to the specific incident room
+                    {'type': 'eta_update_message', 'data': data}
+                )
+                return
+
             # --- NEW: Admin -> Staff Dispatch ---
             if data.get('type') == 'staff_dispatch':
                 venue_id = data.get('venue_id')
@@ -761,6 +776,12 @@ class GlobalAlertConsumer(AsyncWebsocketConsumer):
             'eta': event['eta'],
             'role': event['role']
         }))
+
+    async def staff_dispatch_message(self, event):
+        await self.send(text_data=json.dumps(event['data']))
+
+    async def eta_update_message(self, event):
+        await self.send(text_data=json.dumps(event['data']))
 
     async def dispatch_staff(self, event):
         await self.send(text_data=json.dumps({

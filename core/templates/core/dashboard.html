@@ -153,26 +153,29 @@
             const latMatch = (modalActiveIncident.loc || "").match(/Lat:\s*([0-9.-]+)/i);
             const lngMatch = (modalActiveIncident.loc || "").match(/Lng:\s*([0-9.-]+)/i);
             
-            const selectedIncidentId = modalActiveIncident.id;
-            const selectedIncidentCategory = modalActiveIncident.type;
-            const selectedIncidentLat = latMatch ? parseFloat(latMatch[1]) : 0;
-            const selectedIncidentLng = lngMatch ? parseFloat(lngMatch[1]) : 0;
+            const currentIncidentId = modalActiveIncident.id;
+            const currentIncidentCategory = modalActiveIncident.type;
+            const currentIncidentLat = latMatch ? latMatch[1] : "undefined";
+            const currentIncidentLng = lngMatch ? lngMatch[1] : "undefined";
 
             if (mainSocket && mainSocket.readyState === WebSocket.OPEN) {
                 const payload = {
                     type: 'dispatch_staff',
-                    incident_id: selectedIncidentId,
-                    category: selectedIncidentCategory,
-                    lat: selectedIncidentLat,
-                    lng: selectedIncidentLng
+                    incident_id: currentIncidentId || "Unknown",
+                    category: currentIncidentCategory || "EMERGENCY",
+                    lat: currentIncidentLat || "undefined",
+                    lng: currentIncidentLng || "undefined"
                 };
-                mainSocket.send(JSON.stringify(payload));
                 
-                logAudit(`[GROUND DISPATCH] Staff assigned to incident #${selectedIncidentId}`);
+                // Send to the WebSocket
+                mainSocket.send(JSON.stringify(payload));
+                console.log("Dispatch payload sent:", payload);
+                
+                logAudit(`[GROUND DISPATCH] Staff assigned to incident #${currentIncidentId}`);
                 closeDispatchModal();
                 
                 // Update Local UI Status
-                const card = document.getElementById(`incident-card-${selectedIncidentId}`);
+                const card = document.getElementById(`incident-card-${currentIncidentId}`);
                 if (card) {
                     const pill = card.querySelector('.status-pill');
                     if (pill) {
