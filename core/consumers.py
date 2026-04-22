@@ -188,6 +188,13 @@ class HelpDeskConsumer(AsyncWebsocketConsumer):
                 'message': 'System busy, using standard protocols.'
             }))
 
+    async def eta_update(self, event):
+        # Forward ETA update to victim's chat socket
+        await self.send(text_data=json.dumps({
+            'type': 'eta_update',
+            'eta': event['eta']
+        }))
+
     async def chat_message(self, event):
         message = event['message']
         sender_id = event['sender_id']

@@ -956,17 +956,17 @@
                 const data = JSON.parse(e.data);
                 console.log("WebSocket Payload (Chat):", data);
 
-                // --- STEP 5: Fix ETA Receiver ---
+                // --- SYNC BUG FIX: Update ETA Dynamically ---
                 if (data.type === 'eta_update') {
-                    const etaElement = document.getElementById('ambulance-timer'); 
-                    if(etaElement) {
-                        etaElement.innerText = `HELP IS EN ROUTE - ETA: ${data.eta} mins`;
+                    const etaDisplay = document.getElementById('eta-display') || document.getElementById('ambulance-timer');
+                    if (etaDisplay) {
+                        etaDisplay.innerText = "Arriving in: " + data.eta + " mins";
+                        etaDisplay.classList.remove('eta-pulse');
+                        void etaDisplay.offsetWidth; // Trigger reflow
+                        etaDisplay.classList.add('eta-pulse');
                     }
                     return;
                 }
-
-                // --- SYNC BUG FIX: Update ETA Dynamically (Legacy) ---
-                if (data.type === 'eta_update_legacy') {
 
                 const div = document.createElement('div');
                 
